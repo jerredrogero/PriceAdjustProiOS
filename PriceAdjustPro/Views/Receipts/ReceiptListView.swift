@@ -74,7 +74,11 @@ struct ReceiptListView: View {
                 
                 // Receipts List
                 if receiptStore.receipts.isEmpty {
-                    EmptyStateView()
+                    if searchText.isEmpty {
+                        EmptyStateView()
+                    } else {
+                        SearchEmptyStateView(searchText: searchText)
+                    }
                 } else {
                                             List {
                             ForEach(sortedReceipts, id: \.objectID) { receipt in
@@ -126,6 +130,10 @@ struct ReceiptListView: View {
             }
             .onAppear {
                 receiptStore.loadReceipts()
+                searchText = receiptStore.searchText
+            }
+            .onChange(of: searchText) { newValue in
+                receiptStore.searchText = newValue
             }
             .overlay(
                 Group {
@@ -145,23 +153,26 @@ struct ReceiptListView: View {
     }
     
     private var sortedReceipts: [Receipt] {
+        let receiptsToSort = receiptStore.receipts
+        
         switch selectedSortOption {
         case .dateNewest:
-            return receiptStore.receipts.sorted { ($0.date ?? Date()) > ($1.date ?? Date()) }
+            return receiptsToSort.sorted { ($0.date ?? Date()) > ($1.date ?? Date()) }
         case .dateOldest:
-            return receiptStore.receipts.sorted { ($0.date ?? Date()) < ($1.date ?? Date()) }
+            return receiptsToSort.sorted { ($0.date ?? Date()) < ($1.date ?? Date()) }
         case .totalHighest:
-            return receiptStore.receipts.sorted { $0.total > $1.total }
+            return receiptsToSort.sorted { $0.total > $1.total }
         case .totalLowest:
-            return receiptStore.receipts.sorted { $0.total < $1.total }
+            return receiptsToSort.sorted { $0.total < $1.total }
         case .storeName:
-            return receiptStore.receipts.sorted { ($0.storeName ?? "") < ($1.storeName ?? "") }
+            return receiptsToSort.sorted { ($0.storeName ?? "") < ($1.storeName ?? "") }
         }
     }
     
     private func sortReceipts() {
-        // Trigger view update by modifying a @Published property
-        receiptStore.receipts = sortedReceipts
+        // The sorting is handled by the computed property
+        // This function can be used to trigger any additional side effects if needed
+        // For now, it just needs to exist for the Menu buttons
     }
 }
 
@@ -207,15 +218,22 @@ struct SearchBar: View {
             
             TextField("Search receipts...", text: $text)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
-            
-            if !text.isEmpty {
-                Button(action: {
-                    text = ""
-                }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(.gray)
-                }
-            }
+                .overlay(
+                    HStack {
+                        Spacer()
+                        if !text.isEmpty {
+                            Button(action: {
+                                text = ""
+                                // Hide keyboard
+                                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                            }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.gray)
+                                    .padding(.trailing, 8)
+                            }
+                        }
+                    }
+                )
         }
     }
 }
@@ -244,6 +262,35 @@ struct EmptyStateView: View {
             .background(Color.red)
             .foregroundColor(.white)
             .cornerRadius(10)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black)
+    }
+}
+
+struct SearchEmptyStateView: View {
+    let searchText: String
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 60))
+                .foregroundColor(.gray)
+            
+            Text("No Results Found")
+                .font(.title2)
+                .fontWeight(.semibold)
+                .foregroundColor(.white)
+            
+            Text("No receipts match '\(searchText)'")
+                .font(.body)
+                .foregroundColor(.gray)
+                .multilineTextAlignment(.center)
+            
+            Text("Try searching for store names, receipt numbers, or item names")
+                .font(.caption)
+                .foregroundColor(.gray)
+                .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)

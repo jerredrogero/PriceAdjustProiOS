@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 
+
 class APIService: ObservableObject {
     static let shared = APIService()
     
@@ -126,7 +127,7 @@ class APIService: ObservableObject {
                 .eraseToAnyPublisher()
         }
         
-        print("Making login request to: \(url)")
+        AppLogger.apiCall("POST", to: url.absoluteString)
         
         let loginData = LoginRequest(username: email, password: password)
         
@@ -148,9 +149,7 @@ class APIService: ObservableObject {
         return urlSession.dataTaskPublisher(for: request)
             .map(\.data)
             .handleEvents(receiveOutput: { data in
-                if let jsonString = String(data: data, encoding: .utf8) {
-                    print("API Response: \(jsonString)")
-                }
+                AppLogger.logResponseData(data, from: url.absoluteString)
             })
             .tryMap { data -> APIAuthResponse in
                 let decoder = JSONDecoder()
@@ -172,7 +171,7 @@ class APIService: ObservableObject {
                 // Try to decode as direct user response first (more specific)
                 do {
                     let userResponse = try decoder.decode(APIUserResponse.self, from: data)
-                    print("Decoded as user response: \(userResponse)")
+                    AppLogger.logDataOperation("User response decoded", success: true)
                     // Create an auth response with the user but no tokens
                     return APIAuthResponse(
                         access: nil,
@@ -184,24 +183,24 @@ class APIService: ObservableObject {
                         detail: nil
                     )
                 } catch let decodingError {
-                    print("Failed to decode as user response: \(decodingError)")
+                    AppLogger.logError(decodingError, context: "User response decoding")
                     
                     // If that fails, try to decode as normal auth response
                     if let authResponse = try? decoder.decode(APIAuthResponse.self, from: data) {
-                        print("Decoded as auth response: \(authResponse)")
+                        AppLogger.logDataOperation("Auth response decoded", success: true)
                         return authResponse
                     }
                     
-                    print("Failed to decode as any known response type")
+                    AppLogger.logError(APIError.decodingError, context: "Auth response decoding")
                     throw APIError.decodingError
                 }
             }
             .mapError { error in
                 if error is DecodingError {
-                    print("Decoding error: \(error)")
+                    AppLogger.logError(error, context: "API response decoding")
                     return APIError.decodingError
                 } else {
-                    print("Network error: \(error)")
+                    AppLogger.logError(error, context: "API network request")
                     return APIError.networkError(error)
                 }
             }
@@ -329,14 +328,14 @@ class APIService: ObservableObject {
                 
                 return self.performRequestWithCSRF(url: url, method: "PATCH", body: updateData, csrfToken: csrfToken)
                     .catch { error -> AnyPublisher<ReceiptResponse, APIError> in
-                        print("⚠️ CSRF request failed, trying without CSRF protection...")
+                        AppLogger.logWarning("CSRF request failed, trying without CSRF protection", context: "API request")
                         // If CSRF fails, try without CSRF (some Django views can be exempt)
                         return self.performRequest(url: url, method: "PATCH", body: updateData)
                     }
                     .eraseToAnyPublisher()
             }
             .catch { [weak self] error -> AnyPublisher<ReceiptResponse, APIError> in
-                print("⚠️ CSRF token acquisition failed, trying direct request...")
+                AppLogger.logWarning("CSRF token acquisition failed, trying direct request", context: "API request")
                 // If we can't get CSRF token at all, try direct request
                 guard let self = self else {
                     return Fail(error: APIError.csrfError).eraseToAnyPublisher()
@@ -415,10 +414,7 @@ class APIService: ObservableObject {
         return urlSession.dataTaskPublisher(for: request)
             .map(\.data)
             .handleEvents(receiveOutput: { data in
-                // Debug logging to see actual response
-                if let jsonString = String(data: data, encoding: .utf8) {
-                    print("API Response: \(jsonString)")
-                }
+                AppLogger.logResponseData(data, from: url.absoluteString)
             })
             .decode(type: T.self, decoder: JSONDecoder())
             .map { response in
@@ -426,10 +422,10 @@ class APIService: ObservableObject {
             }
             .mapError { error in
                 if error is DecodingError {
-                    print("Decoding error: \(error)")
+                    AppLogger.logError(error, context: "API response decoding")
                     return APIError.decodingError
                 } else {
-                    print("Network error: \(error)")
+                    AppLogger.logError(error, context: "API network request")
                     return APIError.networkError(error)
                 }
             }
@@ -452,61 +448,47 @@ class APIService: ObservableObject {
         
         // Django session-based auth uses cookies, not Authorization headers
         
-        print("🌐 Making \(method) request to: \(url)")
-        print("🔐 Using CSRF token: \(csrfToken)")
-        print("📤 Headers: \(request.allHTTPHeaderFields ?? [:])")
+        AppLogger.apiCall(method, to: url.absoluteString)
+        AppLogger.logSecurityEvent("Using CSRF token for request")
         
         if let body = body {
             do {
                 let encoder = JSONEncoder()
                 let jsonData = try encoder.encode(body)
                 request.httpBody = jsonData
-                
-                if let bodyString = String(data: jsonData, encoding: .utf8) {
-                    print("📤 Request body: \(bodyString)")
-                }
+                AppLogger.logRequestBody(jsonData)
             } catch {
-                print("❌ Failed to encode request body: \(error)")
+                AppLogger.logError(error, context: "Request body encoding")
                 return Fail(error: APIError.decodingError)
                     .eraseToAnyPublisher()
             }
         }
         
         return urlSession.dataTaskPublisher(for: request)
-            .handleEvents(receiveSubscription: { _ in
-                print("🚀 Request started")
-            })
             .tryMap { data, response -> Data in
                 if let httpResponse = response as? HTTPURLResponse {
-                    print("📥 Response status: \(httpResponse.statusCode)")
-                    print("📥 Response headers: \(httpResponse.allHeaderFields)")
+                    AppLogger.apiSuccess(httpResponse.statusCode, from: url.absoluteString)
                     
                     if httpResponse.statusCode >= 400 {
-                        print("❌ HTTP Error \(httpResponse.statusCode)")
-                        if let errorString = String(data: data, encoding: .utf8) {
-                            print("❌ Error response: \(errorString)")
-                        }
+                        AppLogger.logResponseData(data, from: url.absoluteString)
                         throw APIError.serverError(httpResponse.statusCode)
                     }
                 }
                 return data
             }
             .handleEvents(receiveOutput: { data in
-                // Debug logging to see actual response
-                if let jsonString = String(data: data, encoding: .utf8) {
-                    print("✅ API Response: \(jsonString)")
-                }
+                AppLogger.logResponseData(data, from: url.absoluteString)
             })
             .decode(type: T.self, decoder: JSONDecoder())
             .mapError { error in
                 if error is DecodingError {
-                    print("❌ Decoding error: \(error)")
+                    AppLogger.logError(error, context: "CSRF API response decoding")
                     return APIError.decodingError
                 } else if let apiError = error as? APIError {
-                    print("❌ API error: \(apiError)")
+                    AppLogger.logError(apiError, context: "CSRF API request")
                     return apiError
                 } else {
-                    print("❌ Network error: \(error)")
+                    AppLogger.logError(error, context: "CSRF network request")
                     return APIError.networkError(error)
                 }
             }
@@ -532,10 +514,9 @@ class APIService: ObservableObject {
                 let encoder = JSONEncoder()
                 let jsonData = try encoder.encode(body)
                 request.httpBody = jsonData
-                
-
+                AppLogger.logRequestBody(jsonData)
             } catch {
-                print("Failed to encode request body: \(error)")
+                AppLogger.logError(error, context: "Request body encoding")
                 return Fail(error: APIError.decodingError)
                     .eraseToAnyPublisher()
             }
@@ -544,10 +525,7 @@ class APIService: ObservableObject {
         return urlSession.dataTaskPublisher(for: request)
             .map(\.data)
             .handleEvents(receiveOutput: { data in
-                // Debug logging to see actual response
-                if let jsonString = String(data: data, encoding: .utf8) {
-                    print("API Response: \(jsonString)")
-                }
+                AppLogger.logResponseData(data, from: url.absoluteString)
             })
             .decode(type: T.self, decoder: JSONDecoder())
             .map { response in
@@ -555,10 +533,10 @@ class APIService: ObservableObject {
             }
             .mapError { error in
                 if error is DecodingError {
-                    print("Decoding error: \(error)")
+                    AppLogger.logError(error, context: "API response decoding")
                     return APIError.decodingError
                 } else {
-                    print("Network error: \(error)")
+                    AppLogger.logError(error, context: "API network request")
                     return APIError.networkError(error)
                 }
             }

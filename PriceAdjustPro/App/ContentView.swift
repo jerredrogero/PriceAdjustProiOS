@@ -24,6 +24,9 @@ struct ContentView: View {
                 receiptStore.clearAllLocalReceipts()
                 receiptStore.syncWithServer()
             }
+            
+            // Setup notification navigation handlers
+            setupNotificationHandlers()
         }
         .onChange(of: authService.isAuthenticated) { isAuthenticated in
             if isAuthenticated {
@@ -31,6 +34,34 @@ struct ContentView: View {
                 receiptStore.clearAllLocalReceipts()
                 receiptStore.syncWithServer()
             }
+        }
+    }
+    
+    private func setupNotificationHandlers() {
+        // Handle navigation to different tabs based on notifications
+        NotificationCenter.default.addObserver(
+            forName: .navigateToOnSale,
+            object: nil,
+            queue: .main
+        ) { _ in
+            selectedTab = 1 // On Sale tab
+        }
+        
+        NotificationCenter.default.addObserver(
+            forName: .navigateToReceipts,
+            object: nil,
+            queue: .main
+        ) { _ in
+            selectedTab = 2 // Receipts tab
+        }
+        
+        NotificationCenter.default.addObserver(
+            forName: .navigateToReceipt,
+            object: nil,
+            queue: .main
+        ) { notification in
+            selectedTab = 2 // Receipts tab
+            // Additional handling for specific receipt could be added here
         }
     }
 }

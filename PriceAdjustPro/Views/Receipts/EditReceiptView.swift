@@ -1,6 +1,7 @@
 import SwiftUI
 import CoreData
 
+
 // MARK: - Editable Line Item Model
 class EditableLineItem: ObservableObject, Identifiable {
     let id: UUID
@@ -189,12 +190,7 @@ struct EditReceiptView: View {
     }
     
     private func saveChanges() {
-        print("🔥 SAVE BUTTON TAPPED - saveChanges() called!")
-        print("Receipt number: \(receipt.receiptNumber ?? "nil")")
-        print("Store location: \(storeLocation)")
-        print("Subtotal: \(subtotal)")
-        print("Tax: \(tax)")
-        print("Total: \(total)")
+        AppLogger.user("Save receipt changes")
         
         // Update local receipt first
         receipt.storeName = storeName.isEmpty ? nil : storeName
@@ -208,7 +204,6 @@ struct EditReceiptView: View {
         // Update line items locally
         updateLocalLineItems()
         
-        print("About to call updateReceiptWithAPI...")
         isLoading = true
         
         // Update via API
@@ -267,7 +262,7 @@ struct EditReceiptView: View {
         do {
             try context.save()
         } catch {
-            print("Failed to update line items: \(error)")
+            AppLogger.logError(error, context: "Edit receipt line items update")
         }
     }
 }

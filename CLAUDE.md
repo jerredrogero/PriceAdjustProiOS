@@ -109,6 +109,21 @@ Views/
 - Combine publishers for async operations and data binding
 - Error handling with Result types and user-facing alerts
 
+### Secure Logging (CRITICAL)
+- **NEVER use `print()` for sensitive data** - use `AppLogger` utility instead
+- `AppLogger.user()` for user actions, `AppLogger.apiCall()` for network requests
+- `AppLogger.logError()` for errors, `AppLogger.logWarning()` for warnings
+- Sensitive data automatically redacted in production builds
+- Use structured logging categories (Network, Data, UI, Error)
+- **Examples**:
+  ```swift
+  // ❌ NEVER DO THIS - exposes sensitive data
+  print("API Response: \(jsonString)")
+  
+  // ✅ DO THIS - secure logging
+  AppLogger.logResponseData(data, from: url.absoluteString)
+  ```
+
 ### API Service Patterns
 - Multipart form data for file uploads
 - Session-based authentication with Django

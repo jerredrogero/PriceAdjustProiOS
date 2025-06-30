@@ -1,6 +1,12 @@
 import CoreData
 import Foundation
 
+
+// MARK: - Notification Names
+extension Notification.Name {
+    static let coreDataSaveError = Notification.Name("coreDataSaveError")
+}
+
 struct PersistenceController {
     static let shared = PersistenceController()
     
@@ -22,11 +28,31 @@ struct PersistenceController {
         container.persistentStoreDescriptions.first?.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
         container.persistentStoreDescriptions.first?.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
         
-        container.loadPersistentStores(completionHandler: { (storeDescription, error) in
+        let persistentContainer = container // Capture container to avoid self capture
+        persistentContainer.loadPersistentStores(completionHandler: { (storeDescription, error) in
             if let error = error as NSError? {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate.
-                fatalError("Unresolved error \(error), \(error.userInfo)")
+                // Log the error for debugging  
+                print("❌ Core Data failed to load persistent store: \(error.localizedDescription)")
+                
+                // Attempt to delete and recreate the store if it's corrupted
+                if let storeURL = storeDescription.url {
+                    do {
+                        try FileManager.default.removeItem(at: storeURL)
+                        print("🔄 Deleted corrupted store, attempting to recreate")
+                        
+                        // Try to load again after deletion
+                        persistentContainer.loadPersistentStores { _, recreateError in
+                            if let recreateError = recreateError {
+                                print("❌ Failed to recreate store: \(recreateError.localizedDescription)")
+                                // At this point, we could show a user-facing error or reset to defaults
+                            } else {
+                                print("✅ Successfully recreated Core Data store")
+                            }
+                        }
+                    } catch {
+                        print("❌ Failed to delete corrupted store: \(error.localizedDescription)")
+                    }
+                }
             }
         })
         
@@ -40,9 +66,28 @@ struct PersistenceController {
             do {
                 try context.save()
             } catch {
-                // Replace this implementation with code to handle the error appropriately.
+                // Log the error for debugging
                 let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+                print("❌ Core Data save failed: \(nsError.localizedDescription)")
+                
+                // Attempt to rollback and retry
+                context.rollback()
+                
+                // Try saving again after rollback
+                if context.hasChanges {
+                    do {
+                        try context.save()
+                        print("✅ Core Data save succeeded after rollback")
+                    } catch {
+                        print("❌ Core Data save failed even after rollback: \(error.localizedDescription)")
+                        // Post notification so the UI can handle the error
+                        NotificationCenter.default.post(
+                            name: .coreDataSaveError,
+                            object: nil,
+                            userInfo: ["error": error]
+                        )
+                    }
+                }
             }
         }
     }

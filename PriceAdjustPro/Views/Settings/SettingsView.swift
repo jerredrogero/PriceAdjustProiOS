@@ -3,9 +3,11 @@ import SwiftUI
 struct SettingsView: View {
     @EnvironmentObject var authService: AuthenticationService
     @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var notificationManager: NotificationManager
     @State private var showingEditProfile = false
     @State private var showingChangePassword = false
     @State private var showingLogoutAlert = false
+    @State private var showingNotificationSettings = false
     
     var body: some View {
         NavigationView {
@@ -90,7 +92,9 @@ struct SettingsView: View {
                     // App Settings
                     Section(header: Text("App Settings")
                         .foregroundColor(themeManager.secondaryTextColor)) {
-                        NavigationLink(destination: NotificationSettingsView()) {
+                        Button(action: {
+                            showingNotificationSettings = true
+                        }) {
                             SettingsRow(
                                 icon: "bell.fill",
                                 title: "Notifications",
@@ -193,6 +197,11 @@ struct SettingsView: View {
             .sheet(isPresented: $showingChangePassword) {
                 ChangePasswordView()
                     .environmentObject(themeManager)
+            }
+            .sheet(isPresented: $showingNotificationSettings) {
+                NotificationSettingsView()
+                    .environmentObject(themeManager)
+                    .environmentObject(notificationManager)
             }
         }
     }

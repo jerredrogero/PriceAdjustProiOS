@@ -3,6 +3,7 @@ import CoreData
 import Combine
 import SwiftUI
 
+
 class ReceiptStore: ObservableObject {
     @Published var receipts: [Receipt] = []
     @Published var isLoading = false
@@ -19,6 +20,7 @@ class ReceiptStore: ObservableObject {
     
     init() {
         setupSearchSubscription()
+        setupErrorHandling()
     }
     
     func setPersistenceController(_ controller: PersistenceController) {
@@ -32,6 +34,17 @@ class ReceiptStore: ObservableObject {
             .removeDuplicates()
             .sink { [weak self] searchText in
                 self?.filterReceipts(with: searchText)
+            }
+            .store(in: &cancellables)
+    }
+    
+    private func setupErrorHandling() {
+        NotificationCenter.default.publisher(for: .coreDataSaveError)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] notification in
+                if let error = notification.userInfo?["error"] as? Error {
+                    self?.errorMessage = "Failed to save data: \(error.localizedDescription). Please try again."
+                }
             }
             .store(in: &cancellables)
     }
@@ -84,6 +97,14 @@ class ReceiptStore: ObservableObject {
         
         saveContext()
         loadReceipts()
+        
+        // Send receipt processing completion notification
+        if let receiptNumber = receiptData.receiptNumber {
+            // NotificationManager.shared.sendReceiptProcessingComplete(
+            //     receiptNumber: receiptNumber,
+            //     itemCount: receiptData.lineItems.count
+            // )
+        }
     }
     
     func updateReceipt(_ receipt: Receipt) {
@@ -92,15 +113,15 @@ class ReceiptStore: ObservableObject {
     }
     
     func updateReceiptWithAPI(_ receipt: Receipt, completion: @escaping (Result<Void, Error>) -> Void) {
-        print("🚀 updateReceiptWithAPI called!")
+        AppLogger.user("Update receipt with API")
         
         guard let transactionNumber = receipt.receiptNumber else {
-            print("❌ No transaction number found!")
+            AppLogger.logError(NSError(domain: "ReceiptStore", code: 1, userInfo: [NSLocalizedDescriptionKey: "Receipt number is required for API updates"]), context: "Receipt update")
             completion(.failure(NSError(domain: "ReceiptStore", code: 1, userInfo: [NSLocalizedDescriptionKey: "Receipt number is required for API updates"])))
             return
         }
         
-        print("✅ Transaction number: \(transactionNumber)")
+        AppLogger.logDataOperation("Receipt update started for: \(transactionNumber)", success: true)
         
         isLoading = true
         errorMessage = nil
@@ -132,15 +153,9 @@ class ReceiptStore: ObservableObject {
         
 
         
-        // Debug: Log the request being sent
-        print("📤 SENDING UPDATE REQUEST:")
-        print("Transaction Number: \(transactionNumber)")
-        print("Accept Manual Edits: \(updateRequest.acceptManualEdits)")
-        print("Store Location: \(updateRequest.storeLocation ?? "nil")")
-        print("Subtotal: \(updateRequest.subtotal ?? "nil")")
-        print("Tax: \(updateRequest.tax ?? "nil")")
-        print("Total: \(updateRequest.total ?? "nil")")
-        print("Items count: \(updateRequest.items?.count ?? 0)")
+        // Log the request being sent (without sensitive data)
+        AppLogger.logDataOperation("Sending receipt update request", success: true)
+        AppLogger.logDataCount(updateRequest.items?.count ?? 0, type: "line items")
         
         APIService.shared.updateReceipt(transactionNumber: transactionNumber, updateData: updateRequest)
             .receive(on: DispatchQueue.main)
@@ -148,19 +163,14 @@ class ReceiptStore: ObservableObject {
                 receiveCompletion: { [weak self] apiCompletion in
                     self?.isLoading = false
                     if case .failure(let error) = apiCompletion {
-                        print("❌ API UPDATE FAILED: \(error.localizedDescription)")
+                        AppLogger.logError(error, context: "Receipt API update")
                         self?.errorMessage = "Failed to update receipt on server: \(error.localizedDescription)"
                         completion(.failure(error))
                     }
                 },
                 receiveValue: { [weak self] updatedReceipt in
-                    print("✅ API UPDATE SUCCESS - Server Response:")
-                    print("Transaction Number: \(updatedReceipt.transactionNumber)")
-                    print("Store Location: \(updatedReceipt.storeLocation)")
-                    print("Subtotal: \(updatedReceipt.subtotal)")
-                    print("Tax: \(updatedReceipt.tax)")
-                    print("Total: \(updatedReceipt.total)")
-                    print("Items count: \(updatedReceipt.items.count)")
+                    AppLogger.logDataOperation("Receipt API update success", success: true)
+                    AppLogger.logDataCount(updatedReceipt.items.count, type: "items returned")
                     
                     // Check if server actually applied our changes
                     let sentSubtotal = updateRequest.subtotal ?? "0.00"
@@ -172,10 +182,7 @@ class ReceiptStore: ObservableObject {
                     let difference = abs(sentValue - serverValue)
                     
                     if difference > 0.01 {
-                        print("⚠️ WARNING: Server ignored our updates!")
-                        print("Sent subtotal: \(sentSubtotal) (\(sentValue)), Server returned: \(serverSubtotal) (\(serverValue))")
-                        print("Difference: \(difference)")
-                        print("Keeping local changes instead of server response")
+                        AppLogger.logWarning("Server ignored local updates, keeping local changes", context: "Receipt sync")
                         
                         // Just save local changes without overwriting with server data
                         self?.saveContext()
@@ -183,11 +190,10 @@ class ReceiptStore: ObservableObject {
                         completion(.success(()))
                     } else {
                         // Server properly applied changes, update from server response
-                        print("✅ Server accepted our changes - updating from server response")
+                        AppLogger.logDataOperation("Server accepted local changes", success: true)
                         self?.updateReceiptFromServerData(receipt, serverReceipt: updatedReceipt)
                         self?.saveContext()
                         self?.loadReceipts()
-                        print("✅ LOCAL UPDATE COMPLETE")
                         completion(.success(()))
                     }
                 }
@@ -215,15 +221,13 @@ class ReceiptStore: ObservableObject {
     }
     
     private func saveContext() {
-        guard let context = viewContext else { return }
-        
-        if context.hasChanges {
-            do {
-                try context.save()
-            } catch {
-                errorMessage = "Failed to save receipt: \(error.localizedDescription)"
-            }
+        guard let persistenceController = persistenceController else { 
+            errorMessage = "Data storage is not available"
+            return 
         }
+        
+        // Use the enhanced save method from PersistenceController
+        persistenceController.save()
     }
     
     // MARK: - Search and Filter
@@ -235,7 +239,9 @@ class ReceiptStore: ObservableObject {
         request.sortDescriptors = [NSSortDescriptor(keyPath: \Receipt.date, ascending: false)]
         
         if !searchText.isEmpty {
-            let predicate = NSPredicate(format: "storeName CONTAINS[cd] %@ OR receiptNumber CONTAINS[cd] %@ OR notes CONTAINS[cd] %@", searchText, searchText, searchText)
+            // Search in store name, receipt number, notes, and line item names
+            let predicate = NSPredicate(format: "storeName CONTAINS[cd] %@ OR receiptNumber CONTAINS[cd] %@ OR notes CONTAINS[cd] %@ OR storeLocation CONTAINS[cd] %@ OR ANY lineItems.name CONTAINS[cd] %@", 
+                                      searchText, searchText, searchText, searchText, searchText)
             request.predicate = predicate
         }
         
@@ -259,7 +265,7 @@ class ReceiptStore: ObservableObject {
                     self?.isLoading = false
                     if case .failure(let error) = completion {
                         self?.errorMessage = "Failed to sync receipts from server."
-                        print("Receipt sync error: \(error)")
+                        AppLogger.logError(error, context: "Receipt sync")
                         // Still load local receipts even if sync fails
                         self?.loadReceipts()
                     }
@@ -289,7 +295,7 @@ class ReceiptStore: ObservableObject {
                     updateReceiptFromServerData(existingReceipts.first!, serverReceipt: serverReceipt)
                 }
             } catch {
-                print("Error syncing receipt: \(error)")
+                AppLogger.logError(error, context: "Receipt sync individual item")
             }
         }
         
@@ -326,9 +332,7 @@ class ReceiptStore: ObservableObject {
     }
     
     private func updateReceiptFromServerData(_ receipt: Receipt, serverReceipt: ReceiptResponse) {
-        print("🔄 UPDATING LOCAL RECEIPT FROM SERVER DATA")
-        print("Before update - Local receipt total: \(receipt.total)")
-        print("Server response total: \(serverReceipt.total)")
+        AppLogger.logDataOperation("Updating local receipt from server data", success: true)
         
         receipt.receiptNumber = serverReceipt.transactionNumber
         receipt.storeName = serverReceipt.storeLocation ?? receipt.storeName ?? "Unknown Store"
@@ -341,12 +345,10 @@ class ReceiptStore: ObservableObject {
         receipt.processingStatus = serverReceipt.parsedSuccessfully ? "completed" : "failed"
         receipt.updatedAt = Date()
         
-        print("After basic update - Local receipt total: \(receipt.total)")
-        
         // Update line items
         // First, remove all existing line items
         let existingItemsCount = receipt.lineItemsArray.count
-        print("Removing \(existingItemsCount) existing line items")
+        AppLogger.logDataOperation("Removing \(existingItemsCount) existing line items", success: true)
         
         if let existingItems = receipt.lineItems as? Set<LineItem> {
             for item in existingItems {
@@ -355,7 +357,7 @@ class ReceiptStore: ObservableObject {
         }
         
         // Then create new line items
-        print("Creating \(serverReceipt.items.count) new line items from server")
+        AppLogger.logDataCount(serverReceipt.items.count, type: "new line items from server")
         for itemData in serverReceipt.items {
             let lineItem = LineItem(context: viewContext!)
             lineItem.id = UUID()
@@ -366,10 +368,9 @@ class ReceiptStore: ObservableObject {
             lineItem.category = nil // API doesn't provide category
             lineItem.receipt = receipt
             
-            print("Created line item: \(itemData.description) - $\(itemData.price) x \(itemData.quantity)")
         }
         
-        print("🔄 LOCAL RECEIPT UPDATE COMPLETE")
+        AppLogger.logDataOperation("Local receipt update complete", success: true)
     }
     
     // MARK: - Upload Receipt
@@ -389,6 +390,12 @@ class ReceiptStore: ObservableObject {
                 },
                 receiveValue: { [weak self] serverReceipt in
                     self?.syncServerReceipts([serverReceipt])
+                    
+                    // Send notification for successful upload processing
+                    // NotificationManager.shared.sendReceiptProcessingComplete(
+                    //     receiptNumber: serverReceipt.transactionNumber,
+                    //     itemCount: serverReceipt.items.count
+                    // )
                 }
             )
             .store(in: &cancellables)
@@ -407,13 +414,45 @@ class ReceiptStore: ObservableObject {
             .reduce(0) { $0 + $1.total }
     }
     
-    func getSpendingByMonth() -> [String: Double] {
+    func getReceiptCount(for period: DateInterval? = nil) -> Int {
+        return receipts
+            .filter { receipt in
+                if let period = period {
+                    return period.contains(receipt.date ?? Date())
+                }
+                return true
+            }
+            .count
+    }
+    
+    func getAverageReceiptAmount(for period: DateInterval? = nil) -> Double {
+        let filteredReceipts = receipts.filter { receipt in
+            if let period = period {
+                return period.contains(receipt.date ?? Date())
+            }
+            return true
+        }
+        
+        guard !filteredReceipts.isEmpty else { return 0.0 }
+        
+        let total = filteredReceipts.reduce(0) { $0 + $1.total }
+        return total / Double(filteredReceipts.count)
+    }
+    
+    func getSpendingByMonth(for period: DateInterval? = nil) -> [String: Double] {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "MMM yyyy"
         
         var spendingByMonth: [String: Double] = [:]
         
-        for receipt in receipts {
+        let filteredReceipts = receipts.filter { receipt in
+            if let period = period {
+                return period.contains(receipt.date ?? Date())
+            }
+            return true
+        }
+        
+        for receipt in filteredReceipts {
             let monthKey = dateFormatter.string(from: receipt.date ?? Date())
             spendingByMonth[monthKey, default: 0] += receipt.total
         }
@@ -421,17 +460,51 @@ class ReceiptStore: ObservableObject {
         return spendingByMonth
     }
     
-    func getTopCategories() -> [String: Double] {
+    func getTopCategories(for period: DateInterval? = nil) -> [String: Double] {
         var categorySpending: [String: Double] = [:]
         
-        for receipt in receipts {
+        let filteredReceipts = receipts.filter { receipt in
+            if let period = period {
+                return period.contains(receipt.date ?? Date())
+            }
+            return true
+        }
+        
+        for receipt in filteredReceipts {
             for lineItem in receipt.lineItemsArray {
                 let category = lineItem.category ?? "Other"
-                categorySpending[category, default: 0] += lineItem.price
+                categorySpending[category, default: 0] += lineItem.price * Double(lineItem.quantity)
             }
         }
         
         return categorySpending
+    }
+    
+    // MARK: - Date Helpers
+    
+    func dateInterval(for timeFrame: String) -> DateInterval? {
+        let calendar = Calendar.current
+        let now = Date()
+        
+        switch timeFrame.lowercased() {
+        case "week":
+            let startOfWeek = calendar.dateInterval(of: .weekOfYear, for: now)?.start ?? now
+            return DateInterval(start: startOfWeek, end: now)
+            
+        case "month":
+            let startOfMonth = calendar.dateInterval(of: .month, for: now)?.start ?? now
+            return DateInterval(start: startOfMonth, end: now)
+            
+        case "year":
+            let startOfYear = calendar.dateInterval(of: .year, for: now)?.start ?? now
+            return DateInterval(start: startOfYear, end: now)
+            
+        case "all", "all time":
+            return nil // Return nil for all time (no filtering)
+            
+        default:
+            return nil
+        }
     }
     
     func clearError() {
@@ -452,7 +525,7 @@ class ReceiptStore: ObservableObject {
             }
             saveContext()
             loadReceipts()
-            print("Cleared all local receipts")
+            AppLogger.logDataOperation("Cleared all local receipts", success: true)
         } catch {
             errorMessage = "Failed to clear receipts: \(error.localizedDescription)"
         }

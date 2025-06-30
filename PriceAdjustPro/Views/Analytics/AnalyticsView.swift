@@ -6,9 +6,6 @@ struct AnalyticsView: View {
     @EnvironmentObject var receiptStore: ReceiptStore
     @EnvironmentObject var themeManager: ThemeManager
     @State private var selectedTimeFrame: TimeFrame = .month
-    @State private var analyticsData: AnalyticsResponse?
-    @State private var isLoading = false
-    @State private var cancellables = Set<AnyCancellable>()
     @State private var showingSettings = false
     
     enum TimeFrame: String, CaseIterable {
@@ -16,6 +13,31 @@ struct AnalyticsView: View {
         case month = "Month"
         case year = "Year"
         case all = "All Time"
+    }
+    
+    // Computed properties for analytics data based on selected time frame
+    private var currentDateInterval: DateInterval? {
+        receiptStore.dateInterval(for: selectedTimeFrame.rawValue)
+    }
+    
+    private var totalSpent: Double {
+        receiptStore.getTotalSpending(for: currentDateInterval)
+    }
+    
+    private var receiptCount: Int {
+        receiptStore.getReceiptCount(for: currentDateInterval)
+    }
+    
+    private var averageReceipt: Double {
+        receiptStore.getAverageReceiptAmount(for: currentDateInterval)
+    }
+    
+    private var topCategories: [String: Double] {
+        receiptStore.getTopCategories(for: currentDateInterval)
+    }
+    
+    private var spendingByMonth: [String: Double] {
+        receiptStore.getSpendingByMonth(for: currentDateInterval)
     }
     
     var body: some View {
@@ -33,41 +55,46 @@ struct AnalyticsView: View {
                         }
                         .pickerStyle(SegmentedPickerStyle())
                         .padding()
-                        .onChange(of: selectedTimeFrame) { _ in
-                            loadAnalyticsData()
+                        
+                        // Time Frame Context
+                        if let interval = currentDateInterval {
+                            Text("Showing data from \(interval.start, style: .date) to \(interval.end, style: .date)")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                                .padding(.horizontal)
+                        } else {
+                            Text("Showing all-time data")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                                .padding(.horizontal)
                         }
                         
                         // Summary Cards
-                        if isLoading {
-                            ProgressView("Loading analytics...")
-                                .frame(maxWidth: .infinity, minHeight: 100)
-                        } else {
-                            HStack {
-                                StatCard(
-                                    title: "Total Spent",
-                                    value: "$\(analyticsData?.totalSpent ?? "0.00")",
-                                    icon: "dollarsign.circle.fill",
-                                    color: .blue
-                                )
-                                
-                                StatCard(
-                                    title: "# of Receipts",
-                                    value: "\(analyticsData?.totalReceipts ?? 0)",
-                                    icon: "doc.fill",
-                                    color: .green
-                                )
-                            }
-                            .padding(.horizontal)
-                            
-                            // Average Transaction
+                        HStack {
                             StatCard(
-                                title: "Avg Receipt",
-                                value: "$\(analyticsData?.averageReceiptTotal ?? "0.00")",
-                                icon: "chart.bar.fill",
-                                color: .orange
+                                title: "Total Spent",
+                                value: String(format: "$%.2f", totalSpent),
+                                icon: "dollarsign.circle.fill",
+                                color: .blue
                             )
-                            .padding(.horizontal)
+                            
+                            StatCard(
+                                title: "# of Receipts",
+                                value: "\(receiptCount)",
+                                icon: "doc.fill",
+                                color: .green
+                            )
                         }
+                        .padding(.horizontal)
+                        
+                        // Average Transaction
+                        StatCard(
+                            title: "Avg Receipt",
+                            value: String(format: "$%.2f", averageReceipt),
+                            icon: "chart.bar.fill",
+                            color: .orange
+                        )
+                        .padding(.horizontal)
                         
                         // Categories Section
                         VStack(alignment: .leading) {
@@ -76,16 +103,44 @@ struct AnalyticsView: View {
                                 .foregroundColor(themeManager.primaryTextColor)
                                 .padding(.horizontal)
                             
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 15) {
-                                    ForEach(Array(analyticsData?.spendingByMonth ?? [:]), id: \.key) { month, spending in
-                                        CategoryCard(
-                                            category: month,
-                                            amount: spending.total
-                                        )
+                            if topCategories.isEmpty {
+                                Text("No data available for \(selectedTimeFrame.rawValue.lowercased())")
+                                    .foregroundColor(.gray)
+                                    .padding()
+                            } else {
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 15) {
+                                        ForEach(Array(topCategories.sorted { $0.value > $1.value }.prefix(5)), id: \.key) { category, amount in
+                                            CategoryCard(
+                                                category: category,
+                                                amount: String(format: "%.2f", amount)
+                                            )
+                                        }
                                     }
+                                    .padding()
                                 }
-                                .padding()
+                            }
+                        }
+                        
+                        // Monthly Spending Section (only show if there's data)
+                        if !spendingByMonth.isEmpty {
+                            VStack(alignment: .leading) {
+                                Text("Spending by Month")
+                                    .font(.headline)
+                                    .foregroundColor(themeManager.primaryTextColor)
+                                    .padding(.horizontal)
+                                
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 15) {
+                                        ForEach(Array(spendingByMonth.sorted { $0.value > $1.value }), id: \.key) { month, amount in
+                                            CategoryCard(
+                                                category: month,
+                                                amount: String(format: "%.2f", amount)
+                                            )
+                                        }
+                                    }
+                                    .padding()
+                                }
                             }
                         }
                         
@@ -96,8 +151,20 @@ struct AnalyticsView: View {
                                 .foregroundColor(themeManager.primaryTextColor)
                                 .padding(.horizontal)
                             
-                            ForEach(receiptStore.receipts.prefix(5)) { receipt in
-                                RecentActivityRow(receipt: receipt)
+                            let recentReceipts = currentDateInterval == nil ? 
+                                Array(receiptStore.receipts.prefix(5)) :
+                                Array(receiptStore.receipts.filter { receipt in
+                                    currentDateInterval!.contains(receipt.date ?? Date())
+                                }.prefix(5))
+                            
+                            if recentReceipts.isEmpty {
+                                Text("No receipts found for \(selectedTimeFrame.rawValue.lowercased())")
+                                    .foregroundColor(.gray)
+                                    .padding()
+                            } else {
+                                ForEach(recentReceipts) { receipt in
+                                    RecentActivityRow(receipt: receipt)
+                                }
                             }
                         }
                     }
@@ -112,33 +179,11 @@ struct AnalyticsView: View {
                         .foregroundColor(themeManager.accentColor)
                 }
             )
-            .onAppear {
-                loadAnalyticsData()
-            }
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
                     .environmentObject(themeManager)
             }
         }
-    }
-    
-    private func loadAnalyticsData() {
-        isLoading = true
-        
-        APIService.shared.getAnalytics()
-            .receive(on: DispatchQueue.main)
-            .sink(
-                receiveCompletion: { completion in
-                    isLoading = false
-                    if case .failure(let error) = completion {
-                        print("Error loading analytics: \(error)")
-                    }
-                },
-                receiveValue: { data in
-                    analyticsData = data
-                }
-            )
-            .store(in: &cancellables)
     }
 }
 
