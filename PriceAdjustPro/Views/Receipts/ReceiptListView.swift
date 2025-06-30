@@ -275,6 +275,8 @@ struct LoadingView: View {
 struct DetailViewWrapper: View {
     let receipt: Receipt
     @Environment(\.presentationMode) var presentationMode
+    @EnvironmentObject var receiptStore: ReceiptStore
+    @EnvironmentObject var themeManager: ThemeManager
     @State private var showingEditSheet = false
     
     var body: some View {
@@ -440,8 +442,7 @@ struct DetailViewWrapper: View {
             }
         )
         .sheet(isPresented: $showingEditSheet) {
-            Text("Edit Receipt - Coming Soon")
-                .padding()
+            EditReceiptView(receipt: receipt)
         }
     }
     

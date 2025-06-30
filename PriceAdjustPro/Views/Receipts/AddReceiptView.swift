@@ -312,12 +312,8 @@ struct DocumentPicker: UIViewControllerRepresentable {
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
             guard let url = urls.first else { return }
             
-            do {
-                let pdf = PDFDocument(url: url)
-                parent.selectedPDF = pdf
-            } catch {
-                print("Error reading PDF: \(error)")
-            }
+            let pdf = PDFDocument(url: url)
+            parent.selectedPDF = pdf
             
             parent.presentationMode.wrappedValue.dismiss()
         }

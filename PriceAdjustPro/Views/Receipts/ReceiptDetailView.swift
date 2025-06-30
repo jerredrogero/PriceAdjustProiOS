@@ -460,107 +460,10 @@ struct PDFKitView: UIViewRepresentable {
     func updateUIView(_ uiView: PDFView, context: Context) {}
 }
 
-struct EditReceiptView: View {
-    let receipt: Receipt
-    @Environment(\.presentationMode) var presentationMode
-    @EnvironmentObject var receiptStore: ReceiptStore
-    
-    @State private var storeName: String
-    @State private var receiptNumber: String
-    @State private var storeLocation: String
-    @State private var date: Date
-    @State private var subtotal: String
-    @State private var tax: String
-    @State private var total: String
-    @State private var notes: String
-    
-    init(receipt: Receipt) {
-        self.receipt = receipt
-        _storeName = State(initialValue: receipt.storeName ?? "")
-        _receiptNumber = State(initialValue: receipt.receiptNumber ?? "")
-        _storeLocation = State(initialValue: receipt.storeLocation ?? "")
-        _date = State(initialValue: receipt.date ?? Date())
-        _subtotal = State(initialValue: String(format: "%.2f", receipt.subtotal))
-        _tax = State(initialValue: String(format: "%.2f", receipt.tax))
-        _total = State(initialValue: String(format: "%.2f", receipt.total))
-        _notes = State(initialValue: receipt.notes ?? "")
-    }
-    
-    var body: some View {
-        NavigationView {
-            Form {
-                Section("Store Information") {
-                    TextField("Store Name", text: $storeName)
-                    TextField("Store Location", text: $storeLocation)
-                    TextField("Receipt Number", text: $receiptNumber)
-                }
-                
-                Section("Date & Time") {
-                    DatePicker("Date", selection: $date, displayedComponents: [.date, .hourAndMinute])
-                }
-                
-                Section("Totals") {
-                    HStack {
-                        Text("Subtotal")
-                        Spacer()
-                        TextField("0.00", text: $subtotal)
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                    }
-                    
-                    HStack {
-                        Text("Tax")
-                        Spacer()
-                        TextField("0.00", text: $tax)
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                    }
-                    
-                    HStack {
-                        Text("Total")
-                        Spacer()
-                        TextField("0.00", text: $total)
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                    }
-                }
-                
-                Section("Notes") {
-                    TextField("Add notes about this receipt...", text: $notes, axis: .vertical)
-                        .lineLimit(3...6)
-                }
-            }
-            .navigationTitle("Edit Receipt")
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationBarItems(
-                leading: Button("Cancel") {
-                    presentationMode.wrappedValue.dismiss()
-                },
-                trailing: Button("Save") {
-                    saveChanges()
-                    presentationMode.wrappedValue.dismiss()
-                }
-            )
-        }
-    }
-    
-    private func saveChanges() {
-        receipt.storeName = storeName.isEmpty ? nil : storeName
-        receipt.storeLocation = storeLocation.isEmpty ? nil : storeLocation
-        receipt.receiptNumber = receiptNumber.isEmpty ? nil : receiptNumber
-        receipt.date = date
-        receipt.subtotal = Double(subtotal) ?? 0.0
-        receipt.tax = Double(tax) ?? 0.0
-        receipt.total = Double(total) ?? 0.0
-        receipt.notes = notes.isEmpty ? nil : notes
-        
-        receiptStore.updateReceipt(receipt)
-    }
-}
-
 #Preview {
     NavigationView {
         ReceiptDetailView(receipt: PersistenceController.preview.container.viewContext.registeredObjects.first(where: { $0 is Receipt }) as! Receipt)
     }
     .environmentObject(ReceiptStore())
+    .environmentObject(ThemeManager())
 } 

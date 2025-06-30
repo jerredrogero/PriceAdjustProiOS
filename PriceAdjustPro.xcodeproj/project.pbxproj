@@ -18,6 +18,7 @@
 		3C0A1E4F2C8A123500000001 /* AuthenticationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E502C8A123500000001 /* AuthenticationView.swift */; };
 		3C0A1E512C8A123500000001 /* ReceiptListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E522C8A123500000001 /* ReceiptListView.swift */; };
 		3C0A1E532C8A123500000001 /* AddReceiptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E542C8A123500000001 /* AddReceiptView.swift */; };
+		3C0A1E702C8A123500000001 /* EditReceiptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E712C8A123500000001 /* EditReceiptView.swift */; };
 		3C0A1E552C8A123500000001 /* AnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E562C8A123500000001 /* AnalyticsView.swift */; };
 		3C0A1E572C8A123500000001 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E582C8A123500000001 /* ProfileView.swift */; };
 		3C0A1E5D2C8A123500000001 /* PDFService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E5E2C8A123500000001 /* PDFService.swift */; };
@@ -59,6 +60,7 @@
 		3C0A1E622C8A123500000001 /* PriceAdjustmentsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriceAdjustmentsViewModel.swift; sourceTree = "<group>"; };
 		3C0A1E642C8A123500000001 /* OnSaleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnSaleView.swift; sourceTree = "<group>"; };
 		3C0A1E662C8A123500000001 /* OnSaleViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnSaleViewModel.swift; sourceTree = "<group>"; };
+		3C0A1E712C8A123500000001 /* EditReceiptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditReceiptView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -146,6 +148,7 @@
 			children = (
 				3C0A1E522C8A123500000001 /* ReceiptListView.swift */,
 				3C0A1E542C8A123500000001 /* AddReceiptView.swift */,
+				3C0A1E712C8A123500000001 /* EditReceiptView.swift */,
 			);
 			path = Receipts;
 			sourceTree = "<group>";
@@ -325,6 +328,7 @@
 				3C0A1E4F2C8A123500000001 /* AuthenticationView.swift in Sources */,
 				3C0A1E512C8A123500000001 /* ReceiptListView.swift in Sources */,
 				3C0A1E532C8A123500000001 /* AddReceiptView.swift in Sources */,
+				3C0A1E702C8A123500000001 /* EditReceiptView.swift in Sources */,
 				3C0A1E552C8A123500000001 /* AnalyticsView.swift in Sources */,
 				3C0A1E572C8A123500000001 /* ProfileView.swift in Sources */,
 				3C0A1E5D2C8A123500000001 /* PDFService.swift in Sources */,

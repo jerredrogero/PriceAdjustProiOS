@@ -14,16 +14,18 @@ struct ReceiptsListResponse: Codable {
 
 struct ReceiptResponse: Codable {
     let transactionNumber: String
-    let storeLocation: String
-    let storeNumber: String
+    let storeLocation: String?  // Made optional to handle null values
+    let storeNumber: String?    // Made optional to handle null values
     let transactionDate: String
     let total: String
-    let itemsCount: Int
+    let itemsCount: Int?
     let parsedSuccessfully: Bool
     let parseError: String?
     let subtotal: String
     let tax: String
     let instantSavings: String?
+    let ebtAmount: String?
+    let file: String?
     let items: [LineItemResponse]
     
     enum CodingKeys: String, CodingKey {
@@ -38,6 +40,8 @@ struct ReceiptResponse: Codable {
         case subtotal
         case tax
         case instantSavings = "instant_savings"
+        case ebtAmount = "ebt_amount"
+        case file
         case items
     }
     
@@ -58,7 +62,7 @@ struct LineItemResponse: Codable {
     let isTaxable: Bool
     let onSale: Bool
     let instantSavings: String?
-    let originalPrice: String
+    let originalPrice: String?  // Made optional to handle null values
     let originalTotalPrice: String?
     
     enum CodingKeys: String, CodingKey {
@@ -248,4 +252,46 @@ struct AnalyticsResponse: Codable {
 struct MonthlySpending: Codable {
     let total: String
     let count: Int
+}
+
+// MARK: - Update Receipt Models
+
+struct UpdateReceiptRequest: Codable {
+    let acceptManualEdits: Bool
+    let storeLocation: String?
+    let transactionDate: String?
+    let subtotal: String?
+    let tax: String?
+    let total: String?
+    let notes: String?
+    let items: [UpdateLineItemRequest]?
+    
+    enum CodingKeys: String, CodingKey {
+        case acceptManualEdits = "accept_manual_edits"
+        case storeLocation = "store_location"
+        case transactionDate = "transaction_date"
+        case subtotal
+        case tax
+        case total
+        case notes
+        case items
+    }
+}
+
+struct UpdateLineItemRequest: Codable {
+    let id: Int?
+    let itemCode: String
+    let description: String
+    let price: String
+    let quantity: Int
+    let totalPrice: String
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case itemCode = "item_code"
+        case description
+        case price
+        case quantity
+        case totalPrice = "total_price"
+    }
 }
