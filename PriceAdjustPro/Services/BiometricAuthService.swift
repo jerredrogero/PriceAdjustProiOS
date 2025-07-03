@@ -170,6 +170,54 @@ class BiometricAuthService: ObservableObject {
     
     // MARK: - Setup Biometric Auth
     
+    func enableBiometricWithoutPassword(email: String) async -> Bool {
+        guard isBiometricAvailable else {
+            await MainActor.run {
+                biometricError = "Biometric authentication is not available on this device"
+            }
+            return false
+        }
+        
+        // Check if credentials are already stored
+        if let data = KeychainHelper.load(forKey: storedCredentialsKey) {
+            do {
+                let credentials = try JSONDecoder().decode([String: String].self, from: data)
+                guard let storedEmail = credentials["email"] else {
+                    await MainActor.run {
+                        biometricError = "Invalid stored credentials format"
+                    }
+                    return false
+                }
+                
+                // Verify the stored credentials match the current user
+                if storedEmail != email {
+                    await MainActor.run {
+                        biometricError = "Stored credentials don't match current user"
+                    }
+                    return false
+                }
+                
+                // Just enable biometric authentication using existing credentials
+                setBiometricEnabled(true)
+                AppLogger.logSecurityEvent("Biometric authentication enabled without password prompt")
+                return true
+                
+            } catch {
+                await MainActor.run {
+                    biometricError = "Failed to process stored credentials"
+                }
+                AppLogger.logError(error, context: "Enable biometric without password")
+                return false
+            }
+        } else {
+            // No stored credentials - this means the user needs to set up biometric auth first
+            // We'll just enable the setting and let the login flow handle credential storage
+            setBiometricEnabled(true)
+            AppLogger.logSecurityEvent("Biometric authentication enabled - credentials will be stored on next login")
+            return true
+        }
+    }
+    
     func setupBiometricAuth(email: String, password: String, skipValidation: Bool = false) async -> Bool {
         guard isBiometricAvailable else {
             await MainActor.run {

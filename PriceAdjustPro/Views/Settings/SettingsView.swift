@@ -13,9 +13,6 @@ struct SettingsView: View {
     @State private var showingBiometricSetup = false
     @State private var biometricSetupEmail = ""
     @State private var biometricSetupPassword = ""
-    @State private var pendingBiometricToggle = false
-    @State private var showingPasswordPrompt = false
-    @State private var enteredPassword = ""
     
     var body: some View {
         NavigationView {
@@ -126,8 +123,10 @@ struct SettingsView: View {
                                     get: { biometricService.isBiometricEnabled },
                                     set: { enabled in
                                         if enabled {
-                                            // Don't update state immediately - just trigger the alert
-                                            pendingBiometricToggle = true
+                                            // Enable Face ID without password prompt
+                                            Task {
+                                                await enableBiometricAuthWithoutPassword()
+                                            }
                                         } else {
                                             // For disabling, do it async to avoid publishing warnings
                                             DispatchQueue.main.async {
@@ -311,25 +310,6 @@ struct SettingsView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(themeManager.backgroundColor)
             }
-            .onChange(of: pendingBiometricToggle) { pending in
-                if pending {
-                    showingPasswordPrompt = true
-                    pendingBiometricToggle = false
-                }
-            }
-            .alert("Enter Your Password", isPresented: $showingPasswordPrompt) {
-                SecureField("Password", text: $enteredPassword)
-                Button("Cancel", role: .cancel) { 
-                    enteredPassword = ""
-                }
-                Button("Enable") {
-                    Task {
-                        await enableBiometricAuthFromSettings()
-                    }
-                }
-            } message: {
-                Text("Enter your account password to enable \(biometricService.biometricTypeString) for quick login.")
-            }
         }
     }
     
@@ -505,49 +485,35 @@ struct SettingsView: View {
         }
     }
     
-    private func enableBiometricAuthFromSettings() async {
+    private func enableBiometricAuthWithoutPassword() async {
         guard let user = authService.currentUser else { 
             AppLogger.logWarning("No current user found for biometric setup", context: "BiometricAuth")
-            await MainActor.run {
-                enteredPassword = ""
-            }
             return 
-        }
-        
-        guard !enteredPassword.isEmpty else {
-            AppLogger.logWarning("No password entered for biometric setup", context: "BiometricAuth")
-            await MainActor.run {
-                enteredPassword = ""
-            }
-            return
         }
         
         AppLogger.logSecurityEvent("Starting biometric auth setup for user: \(user.email)")
         
-        // Try to enable biometric auth - this will prompt for biometric authentication
-        let success = await biometricService.setupBiometricAuth(
-            email: user.email, 
-            password: enteredPassword
-        )
-        
-        await MainActor.run {
-            // Always clear the password for security
-            enteredPassword = ""
+        // Check if we have stored credentials from the current session
+        if let credentials = authService.getLastLoginCredentials() {
+            // Use existing credentials to set up biometric auth
+            let success = await biometricService.setupBiometricAuth(
+                email: credentials.email, 
+                password: credentials.password,
+                skipValidation: true
+            )
             
-            if success {
-                AppLogger.logSecurityEvent("Biometric authentication setup completed successfully")
-            } else {
-                let errorMsg = biometricService.biometricError ?? "Unknown error"
-                AppLogger.logError(BiometricError.authenticationFailed, context: "Biometric setup")
-                
-                // Show error to user if it's a credential validation issue
-                if errorMsg.contains("Invalid password") {
-                    // Show the password prompt again for retry
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        showingPasswordPrompt = true
-                    }
+            await MainActor.run {
+                if success {
+                    AppLogger.logSecurityEvent("Biometric authentication enabled with stored session credentials")
+                } else {
+                    AppLogger.logError(BiometricError.authenticationFailed, context: "Biometric setup")
                 }
-                print("Failed to enable biometric authentication: \(errorMsg)")
+            }
+        } else {
+            // No stored credentials available - just enable the toggle and inform user
+            await MainActor.run {
+                biometricService.setBiometricEnabled(true)
+                AppLogger.logSecurityEvent("Biometric authentication enabled - credentials will be stored on next login")
             }
         }
     }

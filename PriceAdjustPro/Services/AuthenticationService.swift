@@ -141,6 +141,10 @@ class AuthenticationService: ObservableObject {
         
         // Store credentials for biometric auth if provided and biometric is available
         if let email = email, let password = password {
+            // Always store session credentials for potential biometric use
+            biometricSetupEmail = email
+            biometricSetupPassword = password
+            
             Task {
                 let biometricService = BiometricAuthService.shared
                 if biometricService.isBiometricAvailable && !biometricService.isBiometricEnabled {
@@ -188,6 +192,14 @@ class AuthenticationService: ObservableObject {
     @Published var shouldOfferBiometricSetup = false
     @Published var biometricSetupEmail: String?
     @Published var biometricSetupPassword: String?
+    
+    func getLastLoginCredentials() -> (email: String, password: String)? {
+        guard let email = biometricSetupEmail,
+              let password = biometricSetupPassword else {
+            return nil
+        }
+        return (email: email, password: password)
+    }
     
     func loginWithBiometrics() {
         isLoading = true
