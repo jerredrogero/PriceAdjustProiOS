@@ -73,7 +73,7 @@ struct AppLogger {
 }
 
 import CoreData
-import KeychainAccess
+// import KeychainAccess
 import Combine
 import UserNotifications
 import UIKit
@@ -84,7 +84,7 @@ struct PriceAdjustProApp: App {
     @StateObject private var authService = AuthenticationService()
     @StateObject private var receiptStore = ReceiptStore()
     @StateObject private var themeManager = ThemeManager()
-    @StateObject private var notificationManager = NotificationManager.shared
+    // @StateObject private var notificationManager = NotificationManager.shared
     
     var body: some Scene {
         WindowGroup {
@@ -93,7 +93,7 @@ struct PriceAdjustProApp: App {
                 .environmentObject(authService)
                 .environmentObject(receiptStore)
                 .environmentObject(themeManager)
-                .environmentObject(notificationManager)
+                // .environmentObject(notificationManager)
                 .preferredColorScheme(themeManager.colorScheme)
                 .onAppear {
                     // Initialize services on app launch
@@ -105,12 +105,12 @@ struct PriceAdjustProApp: App {
     
     private func setupNotifications() {
         // Update notification permission status
-        notificationManager.updatePermissionStatus()
+        // notificationManager.updatePermissionStatus()
         
         // Request permissions if not yet determined
-        if notificationManager.notificationPermissionStatus == .notDetermined {
-            notificationManager.requestNotificationPermission()
-        }
+        // if notificationManager.notificationPermissionStatus == UNAuthorizationStatus.notDetermined {
+        //     notificationManager.requestNotificationPermission()
+        // }
         
         AppLogger.logDataOperation("Notification system initialized", success: true)
     }

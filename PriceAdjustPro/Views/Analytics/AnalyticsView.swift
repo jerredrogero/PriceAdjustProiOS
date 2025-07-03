@@ -163,7 +163,9 @@ struct AnalyticsView: View {
                                     .padding()
                             } else {
                                 ForEach(recentReceipts) { receipt in
-                                    RecentActivityRow(receipt: receipt)
+                                    NavigationLink(destination: DetailViewWrapper(receipt: receipt)) {
+                                        RecentActivityRow(receipt: receipt)
+                                    }
                                 }
                             }
                         }
@@ -257,6 +259,10 @@ struct RecentActivityRow: View {
             Text(String(format: "$%.2f", receipt.total))
                 .font(.headline)
                 .foregroundColor(.white)
+            
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundColor(.gray)
         }
         .padding()
         .background(Color(red: 0.15, green: 0.15, blue: 0.15))

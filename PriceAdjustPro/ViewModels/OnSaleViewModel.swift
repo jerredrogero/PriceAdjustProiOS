@@ -112,12 +112,14 @@ class OnSaleViewModel: ObservableObject {
         let newSalesCount = newSales.count - previousCount
         AppLogger.logDataOperation("Found \(newSalesCount) new sale items", success: true)
         
-        // Send general new sales notification
+        // TODO: Re-enable when NotificationManager is added to target
         // NotificationManager.shared.sendNewSalesAvailable(count: newSalesCount)
         
         // Send specific alerts for high-value sales (savings > $50)
-        // let highValueSales = newSales.suffix(newSalesCount).filter { $0.savings ?? 0 > 50.0 }
+        let highValueSales = newSales.suffix(newSalesCount).filter { $0.savings ?? 0 > 50.0 }
+        AppLogger.logDataOperation("Found \(highValueSales.count) high-value sales (>$50 savings)", success: true)
         
+        // TODO: Re-enable when NotificationManager is added to target
         // for sale in highValueSales.prefix(3) { // Limit to 3 to avoid spam
         //     NotificationManager.shared.sendSaleAlert(
         //         itemName: sale.description,

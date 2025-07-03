@@ -10,6 +10,10 @@
 		03A242162DFB505000AD5970 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = 03A242152DFB505000AD5970 /* KeychainAccess */; };
 		3C0A1E2B2C8A123400000001 /* PriceAdjustProApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E2A2C8A123400000001 /* PriceAdjustProApp.swift */; };
 		3C0A1E2D2C8A123400000001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E2C2C8A123400000001 /* ContentView.swift */; };
+		3C0A1E2F2C8A123500000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3C0A1E2E2C8A123500000001 /* Assets.xcassets */; };
+		3C0A1E322C8A123500000001 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3C0A1E312C8A123500000001 /* Preview Assets.xcassets */; };
+		3C0A1E342C8A123500000001 /* PersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E332C8A123500000001 /* PersistenceController.swift */; };
+		3C0A1E372C8A123500000001 /* PriceAdjustPro.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E352C8A123500000001 /* PriceAdjustPro.xcdatamodeld */; };
 		3C0A1E452C8A123500000001 /* AuthenticationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E462C8A123500000001 /* AuthenticationService.swift */; };
 		3C0A1E472C8A123500000001 /* ReceiptStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E482C8A123500000001 /* ReceiptStore.swift */; };
 		3C0A1E492C8A123500000001 /* AuthModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E4A2C8A123500000001 /* AuthModels.swift */; };
@@ -18,20 +22,16 @@
 		3C0A1E4F2C8A123500000001 /* AuthenticationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E502C8A123500000001 /* AuthenticationView.swift */; };
 		3C0A1E512C8A123500000001 /* ReceiptListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E522C8A123500000001 /* ReceiptListView.swift */; };
 		3C0A1E532C8A123500000001 /* AddReceiptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E542C8A123500000001 /* AddReceiptView.swift */; };
-		3C0A1E702C8A123500000001 /* EditReceiptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E712C8A123500000001 /* EditReceiptView.swift */; };
 		3C0A1E552C8A123500000001 /* AnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E562C8A123500000001 /* AnalyticsView.swift */; };
 		3C0A1E572C8A123500000001 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E582C8A123500000001 /* ProfileView.swift */; };
 		3C0A1E5D2C8A123500000001 /* PDFService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E5E2C8A123500000001 /* PDFService.swift */; };
 		3C0A1E5F2C8A123500000001 /* PriceAdjustmentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E602C8A123500000001 /* PriceAdjustmentsView.swift */; };
-		3C0A1E692C8A123500000001 /* ThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E6A2C8A123500000001 /* ThemeManager.swift */; };
-		3C0A1E6B2C8A123500000001 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E6C2C8A123500000001 /* SettingsView.swift */; };
 		3C0A1E612C8A123500000001 /* PriceAdjustmentsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E622C8A123500000001 /* PriceAdjustmentsViewModel.swift */; };
 		3C0A1E632C8A123500000001 /* OnSaleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E642C8A123500000001 /* OnSaleView.swift */; };
 		3C0A1E652C8A123500000001 /* OnSaleViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E662C8A123500000001 /* OnSaleViewModel.swift */; };
-		3C0A1E2F2C8A123500000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3C0A1E2E2C8A123500000001 /* Assets.xcassets */; };
-		3C0A1E322C8A123500000001 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3C0A1E312C8A123500000001 /* Preview Assets.xcassets */; };
-		3C0A1E342C8A123500000001 /* PersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E332C8A123500000001 /* PersistenceController.swift */; };
-		3C0A1E372C8A123500000001 /* PriceAdjustPro.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E352C8A123500000001 /* PriceAdjustPro.xcdatamodeld */; };
+		3C0A1E692C8A123500000001 /* ThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E6A2C8A123500000001 /* ThemeManager.swift */; };
+		3C0A1E6B2C8A123500000001 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E6C2C8A123500000001 /* SettingsView.swift */; };
+		3C0A1E702C8A123500000001 /* EditReceiptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E712C8A123500000001 /* EditReceiptView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -55,11 +55,11 @@
 		3C0A1E582C8A123500000001 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		3C0A1E5E2C8A123500000001 /* PDFService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFService.swift; sourceTree = "<group>"; };
 		3C0A1E602C8A123500000001 /* PriceAdjustmentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriceAdjustmentsView.swift; sourceTree = "<group>"; };
-		3C0A1E6A2C8A123500000001 /* ThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeManager.swift; sourceTree = "<group>"; };
-		3C0A1E6C2C8A123500000001 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		3C0A1E622C8A123500000001 /* PriceAdjustmentsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriceAdjustmentsViewModel.swift; sourceTree = "<group>"; };
 		3C0A1E642C8A123500000001 /* OnSaleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnSaleView.swift; sourceTree = "<group>"; };
 		3C0A1E662C8A123500000001 /* OnSaleViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnSaleViewModel.swift; sourceTree = "<group>"; };
+		3C0A1E6A2C8A123500000001 /* ThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeManager.swift; sourceTree = "<group>"; };
+		3C0A1E6C2C8A123500000001 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		3C0A1E712C8A123500000001 /* EditReceiptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditReceiptView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -135,6 +135,56 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
+		3C0A1E402C8A124F00000001 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				3C0A1E592C8A123500000001 /* Authentication */,
+				3C0A1E5A2C8A123500000001 /* Receipts */,
+				3C0A1E5B2C8A123500000001 /* Analytics */,
+				3C0A1E5C2C8A123500000001 /* Profile */,
+				3C0A1E672C8A123500000001 /* PriceAdjustments */,
+				3C0A1E682C8A123500000001 /* OnSale */,
+				3C0A1E6D2C8A123500000001 /* Settings */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		3C0A1E412C8A125400000001 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				3C0A1E482C8A123500000001 /* ReceiptStore.swift */,
+				3C0A1E622C8A123500000001 /* PriceAdjustmentsViewModel.swift */,
+				3C0A1E662C8A123500000001 /* OnSaleViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		3C0A1E422C8A125900000001 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				3C0A1E462C8A123500000001 /* AuthenticationService.swift */,
+				3C0A1E4E2C8A123500000001 /* APIService.swift */,
+				3C0A1E5E2C8A123500000001 /* PDFService.swift */,
+				3C0A1E6A2C8A123500000001 /* ThemeManager.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		3C0A1E432C8A125E00000001 /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+		3C0A1E442C8A126300000001 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				3C0A1E2E2C8A123500000001 /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
 		3C0A1E592C8A123500000001 /* Authentication */ = {
 			isa = PBXGroup;
 			children = (
@@ -191,56 +241,6 @@
 				3C0A1E6C2C8A123500000001 /* SettingsView.swift */,
 			);
 			path = Settings;
-			sourceTree = "<group>";
-		};
-		3C0A1E402C8A124F00000001 /* Views */ = {
-			isa = PBXGroup;
-			children = (
-				3C0A1E592C8A123500000001 /* Authentication */,
-				3C0A1E5A2C8A123500000001 /* Receipts */,
-				3C0A1E5B2C8A123500000001 /* Analytics */,
-				3C0A1E5C2C8A123500000001 /* Profile */,
-				3C0A1E672C8A123500000001 /* PriceAdjustments */,
-				3C0A1E682C8A123500000001 /* OnSale */,
-				3C0A1E6D2C8A123500000001 /* Settings */,
-			);
-			path = Views;
-			sourceTree = "<group>";
-		};
-		3C0A1E412C8A125400000001 /* ViewModels */ = {
-			isa = PBXGroup;
-			children = (
-				3C0A1E482C8A123500000001 /* ReceiptStore.swift */,
-				3C0A1E622C8A123500000001 /* PriceAdjustmentsViewModel.swift */,
-				3C0A1E662C8A123500000001 /* OnSaleViewModel.swift */,
-			);
-			path = ViewModels;
-			sourceTree = "<group>";
-		};
-		3C0A1E422C8A125900000001 /* Services */ = {
-			isa = PBXGroup;
-			children = (
-				3C0A1E462C8A123500000001 /* AuthenticationService.swift */,
-				3C0A1E4E2C8A123500000001 /* APIService.swift */,
-				3C0A1E5E2C8A123500000001 /* PDFService.swift */,
-				3C0A1E6A2C8A123500000001 /* ThemeManager.swift */,
-			);
-			path = Services;
-			sourceTree = "<group>";
-		};
-		3C0A1E432C8A125E00000001 /* Utilities */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Utilities;
-			sourceTree = "<group>";
-		};
-		3C0A1E442C8A126300000001 /* Resources */ = {
-			isa = PBXGroup;
-			children = (
-				3C0A1E2E2C8A123500000001 /* Assets.xcassets */,
-			);
-			path = Resources;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -471,6 +471,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"PriceAdjustPro/Preview Content\"";
+				DEVELOPMENT_TEAM = JA9X29KK29;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = PriceAdjustPro/Info.plist;
@@ -502,6 +503,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"PriceAdjustPro/Preview Content\"";
+				DEVELOPMENT_TEAM = JA9X29KK29;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = PriceAdjustPro/Info.plist;

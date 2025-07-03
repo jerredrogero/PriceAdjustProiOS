@@ -1,13 +1,21 @@
 import SwiftUI
+import UserNotifications
+import LocalAuthentication
 
 struct SettingsView: View {
     @EnvironmentObject var authService: AuthenticationService
     @EnvironmentObject var themeManager: ThemeManager
-    @EnvironmentObject var notificationManager: NotificationManager
+    @StateObject private var biometricService = BiometricAuthService.shared
     @State private var showingEditProfile = false
     @State private var showingChangePassword = false
     @State private var showingLogoutAlert = false
     @State private var showingNotificationSettings = false
+    @State private var showingBiometricSetup = false
+    @State private var biometricSetupEmail = ""
+    @State private var biometricSetupPassword = ""
+    @State private var pendingBiometricToggle = false
+    @State private var showingPasswordPrompt = false
+    @State private var enteredPassword = ""
     
     var body: some View {
         NavigationView {
@@ -102,6 +110,36 @@ struct SettingsView: View {
                             )
                         }
                         
+                        // Biometric Authentication Toggle
+                        if biometricService.isBiometricAvailable {
+                            HStack {
+                                Image(systemName: biometricIconName)
+                                    .foregroundColor(themeManager.accentColor)
+                                    .frame(width: 25)
+                                
+                                Text(biometricService.biometricTypeString)
+                                    .foregroundColor(themeManager.primaryTextColor)
+                                
+                                Spacer()
+                                
+                                Toggle("", isOn: Binding(
+                                    get: { biometricService.isBiometricEnabled },
+                                    set: { enabled in
+                                        if enabled {
+                                            // Don't update state immediately - just trigger the alert
+                                            pendingBiometricToggle = true
+                                        } else {
+                                            // For disabling, do it async to avoid publishing warnings
+                                            DispatchQueue.main.async {
+                                                biometricService.setBiometricEnabled(false)
+                                            }
+                                        }
+                                    }
+                                ))
+                                .toggleStyle(SwitchToggleStyle(tint: themeManager.accentColor))
+                            }
+                        }
+                        
                         NavigationLink(destination: DataManagementView()) {
                             SettingsRow(
                                 icon: "externaldrive.fill",
@@ -157,6 +195,74 @@ struct SettingsView: View {
                     }
                     .listRowBackground(themeManager.cardBackgroundColor)
                     
+                    // Developer Testing (Only show in Debug builds)
+                    #if DEBUG
+                    Section(header: Text("Developer Testing")
+                        .foregroundColor(themeManager.secondaryTextColor)) {
+                        
+                        Button(action: {
+                            sendTestNotification()
+                        }) {
+                            SettingsRow(
+                                icon: "bell.badge",
+                                title: "Test Basic Notification",
+                                themeManager: themeManager
+                            )
+                        }
+                        
+                        Button(action: {
+                            sendTestSaleNotification()
+                        }) {
+                            SettingsRow(
+                                icon: "tag.fill",
+                                title: "Test Sale Alert",
+                                themeManager: themeManager
+                            )
+                        }
+                        
+                        Button(action: {
+                            sendTestPriceDropNotification()
+                        }) {
+                            SettingsRow(
+                                icon: "arrow.down.circle.fill",
+                                title: "Test Price Drop Alert",
+                                themeManager: themeManager
+                            )
+                        }
+                        
+                        Button(action: {
+                            sendTestReceiptNotification()
+                        }) {
+                            SettingsRow(
+                                icon: "doc.badge.plus",
+                                title: "Test Receipt Processed",
+                                themeManager: themeManager
+                            )
+                        }
+                        
+                        Button(action: {
+                            sendAdvancedTestNotification()
+                        }) {
+                            SettingsRow(
+                                icon: "hammer.fill",
+                                title: "Advanced Testing",
+                                themeManager: themeManager
+                            )
+                        }
+                        
+                        Button(action: {
+                            checkNotificationPermissions()
+                        }) {
+                            SettingsRow(
+                                icon: "questionmark.circle.fill",
+                                title: "Check Permissions",
+                                themeManager: themeManager
+                            )
+                        }
+                    }
+                    .listRowBackground(themeManager.cardBackgroundColor)
+                    #endif
+                    
                     // Logout
                     Section {
                         Button(action: {
@@ -199,9 +305,30 @@ struct SettingsView: View {
                     .environmentObject(themeManager)
             }
             .sheet(isPresented: $showingNotificationSettings) {
-                NotificationSettingsView()
-                    .environmentObject(themeManager)
-                    .environmentObject(notificationManager)
+                Text("Notification Settings")
+                    .font(.title)
+                    .foregroundColor(themeManager.primaryTextColor)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(themeManager.backgroundColor)
+            }
+            .onChange(of: pendingBiometricToggle) { pending in
+                if pending {
+                    showingPasswordPrompt = true
+                    pendingBiometricToggle = false
+                }
+            }
+            .alert("Enter Your Password", isPresented: $showingPasswordPrompt) {
+                SecureField("Password", text: $enteredPassword)
+                Button("Cancel", role: .cancel) { 
+                    enteredPassword = ""
+                }
+                Button("Enable") {
+                    Task {
+                        await enableBiometricAuthFromSettings()
+                    }
+                }
+            } message: {
+                Text("Enter your account password to enable \(biometricService.biometricTypeString) for quick login.")
             }
         }
     }
@@ -218,6 +345,210 @@ struct SettingsView: View {
             return username
         } else {
             return "User"
+        }
+    }
+    
+    // MARK: - Testing Methods
+    
+    #if DEBUG
+    private func sendTestNotification() {
+        // First request permission, then send notification
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
+            DispatchQueue.main.async {
+                if granted {
+                    self.scheduleTestNotification(
+                        title: "🧪 Test Notification",
+                        body: "This is a test notification from PriceAdjustPro!",
+                        delay: 2
+                    )
+                } else {
+                    print("❌ Notification permission denied")
+                }
+            }
+        }
+        
+        AppLogger.logDataOperation("Test notification triggered", success: true)
+        print("🧪 Test notification sent!")
+    }
+    
+    private func sendTestSaleNotification() {
+        scheduleTestNotification(
+            title: "🏷️ New Sale Alert!",
+            body: "Save $5.00 on Kirkland Signature Organic Coconut Oil with Instant Rebate",
+            delay: 2
+        )
+        AppLogger.logDataOperation("Test sale notification triggered", success: true)
+        print("🏷️ Test sale notification sent!")
+    }
+    
+    private func sendTestPriceDropNotification() {
+        scheduleTestNotification(
+            title: "📉 Price Drop Alert!",
+            body: "Kirkland Signature Organic Coconut Oil dropped $5.00 to $19.99",
+            delay: 2
+        )
+        AppLogger.logDataOperation("Test price drop notification triggered", success: true)
+        print("📉 Test price drop notification sent!")
+    }
+    
+    private func sendTestReceiptNotification() {
+        scheduleTestNotification(
+            title: "✅ Receipt Processed!",
+            body: "Receipt #TEST123456 processed with 15 items",
+            delay: 2
+        )
+        AppLogger.logDataOperation("Test receipt notification triggered", success: true)
+        print("✅ Test receipt notification sent!")
+    }
+    
+    private func sendAdvancedTestNotification() {
+        // Send a custom notification with advanced features
+        let content = UNMutableNotificationContent()
+        content.title = "🧪 Advanced Test"
+        content.body = "This is an advanced notification test with custom timing and actions."
+        content.sound = .default
+        content.badge = 1
+        
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 3, repeats: false)
+        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
+        
+        UNUserNotificationCenter.current().add(request) { error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    AppLogger.logError(error, context: "Advanced test notification")
+                } else {
+                    AppLogger.logDataOperation("Advanced test notification scheduled", success: true)
+                }
+            }
+        }
+        
+        print("🔬 Advanced test notification scheduled for 3 seconds!")
+    }
+    
+    private func scheduleTestNotification(title: String, body: String, delay: TimeInterval) {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+        content.badge = 1
+        
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: delay, repeats: false)
+        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
+        
+        UNUserNotificationCenter.current().add(request) { error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    print("❌ Notification scheduling failed: \(error.localizedDescription)")
+                    AppLogger.logError(error, context: "Notification scheduling")
+                } else {
+                    print("✅ Notification scheduled: \(title)")
+                }
+            }
+        }
+    }
+    
+    private func checkNotificationPermissions() {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            DispatchQueue.main.async {
+                print("🔍 Notification Permission Status:")
+                print("  - Authorization: \(settings.authorizationStatus.rawValue)")
+                print("  - Alert Setting: \(settings.alertSetting.rawValue)")
+                print("  - Badge Setting: \(settings.badgeSetting.rawValue)")
+                print("  - Sound Setting: \(settings.soundSetting.rawValue)")
+                print("  - Notification Center: \(settings.notificationCenterSetting.rawValue)")
+                print("  - Lock Screen: \(settings.lockScreenSetting.rawValue)")
+                print("  - Car Play: \(settings.carPlaySetting.rawValue)")
+                
+                switch settings.authorizationStatus {
+                case .authorized:
+                    print("✅ Notifications are AUTHORIZED")
+                case .denied:
+                    print("❌ Notifications are DENIED - User needs to enable in Settings")
+                case .notDetermined:
+                    print("⚠️ Notifications are NOT DETERMINED - Need to request permission")
+                    // Request permission
+                    UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
+                        DispatchQueue.main.async {
+                            if granted {
+                                print("✅ Permission granted!")
+                            } else {
+                                print("❌ Permission denied: \(error?.localizedDescription ?? "Unknown error")")
+                            }
+                        }
+                    }
+                case .provisional:
+                    print("⚠️ Notifications are PROVISIONAL")
+                case .ephemeral:
+                    print("⚠️ Notifications are EPHEMERAL")
+                @unknown default:
+                    print("⚠️ Unknown notification authorization status")
+                }
+                
+                AppLogger.logDataOperation("Notification permissions checked", success: true)
+            }
+        }
+    }
+    #endif
+    
+    // MARK: - Biometric Authentication
+    
+    private var biometricIconName: String {
+        switch biometricService.biometricType {
+        case .faceID:
+            return "faceid"
+        case .touchID:
+            return "touchid"
+        case .opticID:
+            return "opticid"
+        default:
+            return "person.crop.circle.badge.checkmark"
+        }
+    }
+    
+    private func enableBiometricAuthFromSettings() async {
+        guard let user = authService.currentUser else { 
+            AppLogger.logWarning("No current user found for biometric setup", context: "BiometricAuth")
+            await MainActor.run {
+                enteredPassword = ""
+            }
+            return 
+        }
+        
+        guard !enteredPassword.isEmpty else {
+            AppLogger.logWarning("No password entered for biometric setup", context: "BiometricAuth")
+            await MainActor.run {
+                enteredPassword = ""
+            }
+            return
+        }
+        
+        AppLogger.logSecurityEvent("Starting biometric auth setup for user: \(user.email)")
+        
+        // Try to enable biometric auth - this will prompt for biometric authentication
+        let success = await biometricService.setupBiometricAuth(
+            email: user.email, 
+            password: enteredPassword
+        )
+        
+        await MainActor.run {
+            // Always clear the password for security
+            enteredPassword = ""
+            
+            if success {
+                AppLogger.logSecurityEvent("Biometric authentication setup completed successfully")
+            } else {
+                let errorMsg = biometricService.biometricError ?? "Unknown error"
+                AppLogger.logError(BiometricError.authenticationFailed, context: "Biometric setup")
+                
+                // Show error to user if it's a credential validation issue
+                if errorMsg.contains("Invalid password") {
+                    // Show the password prompt again for retry
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        showingPasswordPrompt = true
+                    }
+                }
+                print("Failed to enable biometric authentication: \(errorMsg)")
+            }
         }
     }
 }

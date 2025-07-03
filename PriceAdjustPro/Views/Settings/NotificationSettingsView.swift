@@ -3,9 +3,13 @@ import UserNotifications
 import UIKit
 
 struct NotificationSettingsView: View {
-    @EnvironmentObject var notificationManager: NotificationManager
+    // @EnvironmentObject var notificationManager: NotificationManager
     @EnvironmentObject var themeManager: ThemeManager
     @Environment(\.presentationMode) var presentationMode
+    @State private var notificationsEnabled = true
+    @State private var saleAlertsEnabled = true
+    @State private var receiptProcessingAlertsEnabled = true
+    @State private var priceDropAlertsEnabled = true
     
     var body: some View {
         NavigationView {
@@ -31,21 +35,21 @@ struct NotificationSettingsView: View {
                             
                             Spacer()
                             
-                            Toggle("", isOn: $notificationManager.isNotificationEnabled)
+                            Toggle("", isOn: $notificationsEnabled)
                                 .tint(.costcoRed)
                         }
                         .padding(.vertical, 4)
                     }
                     .listRowBackground(themeManager.cardBackgroundColor)
                     
-                    if notificationManager.isNotificationEnabled {
+                    if notificationsEnabled {
                         Section("Notification Types") {
                             // Sale alerts
                             NotificationSettingRow(
                                 icon: "tag.fill",
                                 title: "Sale Alerts",
                                 description: "New sales and price drops",
-                                isEnabled: $notificationManager.saleAlertsEnabled
+                                isEnabled: $saleAlertsEnabled
                             )
                             
                             // Receipt processing
@@ -53,7 +57,7 @@ struct NotificationSettingsView: View {
                                 icon: "doc.text.fill",
                                 title: "Receipt Processing",
                                 description: "When receipt processing completes",
-                                isEnabled: $notificationManager.receiptProcessingAlertsEnabled
+                                isEnabled: $receiptProcessingAlertsEnabled
                             )
                             
                             // Price drop alerts
@@ -61,7 +65,7 @@ struct NotificationSettingsView: View {
                                 icon: "arrow.down.circle.fill",
                                 title: "Price Drop Alerts",
                                 description: "When prices drop on items",
-                                isEnabled: $notificationManager.priceDropAlertsEnabled
+                                isEnabled: $priceDropAlertsEnabled
                             )
                         }
                         .listRowBackground(themeManager.cardBackgroundColor)
@@ -83,7 +87,8 @@ struct NotificationSettingsView: View {
                                 
                                 Spacer()
                                 
-                                if notificationManager.notificationPermissionStatus == .denied {
+                                // TODO: Re-enable when NotificationManager is available
+                                // if notificationManager.notificationPermissionStatus == .denied {
                                     Button("Settings") {
                                         openAppSettings()
                                     }
@@ -272,6 +277,6 @@ struct NotificationSettingRow: View {
 
 #Preview {
     NotificationSettingsView()
-        .environmentObject(NotificationManager.shared)
+        // .environmentObject(NotificationManager.shared)
         .environmentObject(ThemeManager())
 }

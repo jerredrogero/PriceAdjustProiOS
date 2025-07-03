@@ -1,7 +1,9 @@
 import SwiftUI
+import LocalAuthentication
 
 struct AuthenticationView: View {
     @EnvironmentObject var authService: AuthenticationService
+    @StateObject private var biometricService = BiometricAuthService.shared
     @State private var isRegistering = false
     @State private var email = ""
     @State private var password = ""
@@ -65,6 +67,26 @@ struct AuthenticationView: View {
                     .padding(.horizontal)
                 }
                 
+                // Biometric Authentication Button (only show for login)
+                if !isRegistering && biometricService.isBiometricAvailable && biometricService.isBiometricEnabled {
+                    Button(action: {
+                        authService.loginWithBiometrics()
+                    }) {
+                        HStack {
+                            Image(systemName: biometricIconName)
+                                .font(.title2)
+                            Text("Sign in with \(biometricService.biometricTypeString)")
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.gray.opacity(0.8))
+                        .cornerRadius(10)
+                    }
+                    .padding(.horizontal)
+                    .padding(.top, 10)
+                }
+                
                 Button(action: {
                     withAnimation {
                         isRegistering.toggle()
@@ -84,6 +106,29 @@ struct AuthenticationView: View {
                 }
             }
             .navigationBarHidden(true)
+            .alert("Enable \(biometricService.biometricTypeString)?", isPresented: $authService.shouldOfferBiometricSetup) {
+                Button("Enable") {
+                    authService.enableBiometricAuth()
+                }
+                Button("Not Now", role: .cancel) {
+                    authService.declineBiometricAuth()
+                }
+            } message: {
+                Text("Use \(biometricService.biometricTypeString) for quick and secure login to PriceAdjustPro.")
+            }
+        }
+    }
+    
+    private var biometricIconName: String {
+        switch biometricService.biometricType {
+        case .faceID:
+            return "faceid"
+        case .touchID:
+            return "touchid"
+        case .opticID:
+            return "opticid"
+        default:
+            return "person.crop.circle.badge.checkmark"
         }
     }
 }

@@ -99,9 +99,9 @@ class ReceiptStore: ObservableObject {
         loadReceipts()
         
         // Send receipt processing completion notification
-        if let receiptNumber = receiptData.receiptNumber {
+        if receiptData.receiptNumber != nil {
             // NotificationManager.shared.sendReceiptProcessingComplete(
-            //     receiptNumber: receiptNumber,
+            //     receiptNumber: receiptData.receiptNumber,
             //     itemCount: receiptData.lineItems.count
             // )
         }
@@ -202,22 +202,75 @@ class ReceiptStore: ObservableObject {
     }
     
     func deleteReceipt(_ receipt: Receipt) {
-        guard let context = viewContext else { return }
+        guard let receiptNumber = receipt.receiptNumber else {
+            errorMessage = "Cannot delete receipt: No receipt number found"
+            return
+        }
         
-        context.delete(receipt)
-        saveContext()
-        loadReceipts()
+        isLoading = true
+        errorMessage = nil
+        
+        Task {
+            do {
+                // First delete from server
+                try await APIService.shared.deleteReceipt(id: receiptNumber)
+                
+                // Then delete locally
+                await MainActor.run {
+                    guard let context = viewContext else { 
+                        isLoading = false
+                        errorMessage = "Local storage not available"
+                        return 
+                    }
+                    
+                    context.delete(receipt)
+                    saveContext()
+                    loadReceipts()
+                    isLoading = false
+                }
+            } catch {
+                await MainActor.run {
+                    isLoading = false
+                    errorMessage = "Failed to delete receipt: \(error.localizedDescription)"
+                }
+            }
+        }
     }
     
     func deleteReceipts(at offsets: IndexSet) {
         guard let context = viewContext else { return }
         
-        for index in offsets {
-            context.delete(receipts[index])
-        }
+        isLoading = true
+        errorMessage = nil
         
-        saveContext()
-        loadReceipts()
+        let receiptsToDelete = offsets.map { receipts[$0] }
+        
+        Task {
+            do {
+                // Delete each receipt from server first
+                for receipt in receiptsToDelete {
+                    guard let receiptNumber = receipt.receiptNumber else {
+                        continue // Skip receipts without numbers
+                    }
+                    try await APIService.shared.deleteReceipt(id: receiptNumber)
+                }
+                
+                // Then delete all locally
+                await MainActor.run {
+                    for receipt in receiptsToDelete {
+                        context.delete(receipt)
+                    }
+                    saveContext()
+                    loadReceipts()
+                    isLoading = false
+                }
+            } catch {
+                await MainActor.run {
+                    isLoading = false
+                    errorMessage = "Failed to delete receipts: \(error.localizedDescription)"
+                }
+            }
+        }
     }
     
     private func saveContext() {
@@ -375,30 +428,50 @@ class ReceiptStore: ObservableObject {
     
     // MARK: - Upload Receipt
     
-    func uploadReceiptToServer(pdfData: Data, fileName: String) {
-        isLoading = true
-        errorMessage = nil
+    func uploadReceiptToServer(pdfData: Data, fileName: String) async throws {
+        await MainActor.run {
+            isLoading = true
+            errorMessage = nil
+        }
         
-        APIService.shared.uploadReceipt(pdfData: pdfData, fileName: fileName)
-            .receive(on: DispatchQueue.main)
-            .sink(
-                receiveCompletion: { [weak self] completion in
-                    self?.isLoading = false
-                    if case .failure(let error) = completion {
-                        self?.errorMessage = error.localizedDescription
-                    }
-                },
-                receiveValue: { [weak self] serverReceipt in
-                    self?.syncServerReceipts([serverReceipt])
-                    
-                    // Send notification for successful upload processing
-                    // NotificationManager.shared.sendReceiptProcessingComplete(
-                    //     receiptNumber: serverReceipt.transactionNumber,
-                    //     itemCount: serverReceipt.items.count
-                    // )
+        do {
+            let serverReceipt = try await APIService.shared.uploadReceipt(pdfData: pdfData, fileName: fileName)
+            
+            await MainActor.run {
+                self.isLoading = false
+                self.syncServerReceipts([serverReceipt])
+                
+                // Send notification for successful upload processing
+                // NotificationManager.shared.sendReceiptProcessingComplete(
+                //     receiptNumber: serverReceipt.transactionNumber,
+                //     itemCount: serverReceipt.items.count
+                // )
+            }
+        } catch APIService.APIError.uploadSuccessButNoData {
+            // This is actually a success case - the upload worked but the server didn't return parseable data
+            // This is common when the server returns a simple success message instead of full receipt data
+            await MainActor.run {
+                self.isLoading = false
+                // Clear any existing error messages since this is success
+                self.errorMessage = nil
+                // Don't add any fake receipt data - just let the user know it succeeded
+                // The actual receipt will appear when we sync with the server later
+            }
+            // Don't throw the error - this is success
+            return
+        } catch {
+            await MainActor.run {
+                self.isLoading = false
+                // Only set error message for actual errors, not for upload success cases
+                if case APIService.APIError.uploadSuccessButNoData = error {
+                    // This should have been caught above, but just in case
+                    self.errorMessage = nil
+                } else {
+                    self.errorMessage = error.localizedDescription
                 }
-            )
-            .store(in: &cancellables)
+            }
+            throw error
+        }
     }
     
     // MARK: - Analytics

@@ -15,6 +15,8 @@ struct AddReceiptView: View {
     @State private var selectedPDF: PDFDocument?
     @State private var isProcessing = false
     @State private var errorMessage: String?
+    @State private var uploadSuccessMessage: String?
+    @State private var showingSuccessAlert = false
     
     var body: some View {
         NavigationView {
@@ -91,6 +93,15 @@ struct AddReceiptView: View {
                         .multilineTextAlignment(.center)
                 }
                 
+                // Success Message
+                if let successMessage = uploadSuccessMessage {
+                    Text(successMessage)
+                        .foregroundColor(.green)
+                        .font(.caption)
+                        .padding(.horizontal)
+                        .multilineTextAlignment(.center)
+                }
+                
                 Spacer()
                 
                 // Instructions
@@ -126,51 +137,98 @@ struct AddReceiptView: View {
             DocumentPicker(selectedPDF: $selectedPDF)
         }
         .onChange(of: selectedImage) { _ in
-            processImage()
+            Task {
+                await processImage()
+            }
         }
         .onChange(of: selectedPDF) { _ in
-            processPDF()
+            Task {
+                await processPDF()
+            }
+        }
+        .alert("Upload Successful!", isPresented: $showingSuccessAlert) {
+            Button("OK") {
+                presentationMode.wrappedValue.dismiss()
+            }
+        } message: {
+            Text(uploadSuccessMessage ?? "Your receipt has been uploaded successfully.")
         }
     }
     
-    private func processImage() {
+    private func processImage() async {
         guard let image = selectedImage else { return }
-        isProcessing = true
-        errorMessage = nil
+        
+        await MainActor.run {
+            isProcessing = true
+            errorMessage = nil
+            uploadSuccessMessage = nil
+        }
         
         // Convert image to data
         guard let imageData = image.jpegData(compressionQuality: 0.8) else {
-            errorMessage = "Failed to process image"
-            isProcessing = false
+            await MainActor.run {
+                errorMessage = "Failed to process image"
+                isProcessing = false
+            }
             return
         }
         
         // Upload image to server for processing
         let fileName = "receipt_\(Date().timeIntervalSince1970).jpg"
-        receiptStore.uploadReceiptToServer(pdfData: imageData, fileName: fileName)
         
-        isProcessing = false
-        selectedImage = nil
+        do {
+            try await receiptStore.uploadReceiptToServer(pdfData: imageData, fileName: fileName)
+            
+            await MainActor.run {
+                isProcessing = false
+                selectedImage = nil
+                uploadSuccessMessage = "Receipt uploaded successfully! Processing will begin shortly."
+                showingSuccessAlert = true
+            }
+        } catch {
+            await MainActor.run {
+                isProcessing = false
+                errorMessage = "Upload failed: \(error.localizedDescription)"
+            }
+        }
     }
     
-    private func processPDF() {
+    private func processPDF() async {
         guard let pdf = selectedPDF else { return }
-        isProcessing = true
-        errorMessage = nil
+        
+        await MainActor.run {
+            isProcessing = true
+            errorMessage = nil
+            uploadSuccessMessage = nil
+        }
         
         // Convert PDF to data
         guard let pdfData = pdf.dataRepresentation() else {
-            errorMessage = "Failed to process PDF"
-            isProcessing = false
+            await MainActor.run {
+                errorMessage = "Failed to process PDF"
+                isProcessing = false
+            }
             return
         }
         
         // Upload PDF to server for processing
         let fileName = "receipt_\(Date().timeIntervalSince1970).pdf"
-        receiptStore.uploadReceiptToServer(pdfData: pdfData, fileName: fileName)
         
-        isProcessing = false
-        selectedPDF = nil
+        do {
+            try await receiptStore.uploadReceiptToServer(pdfData: pdfData, fileName: fileName)
+            
+            await MainActor.run {
+                isProcessing = false
+                selectedPDF = nil
+                uploadSuccessMessage = "Receipt uploaded successfully! Processing will begin shortly."
+                showingSuccessAlert = true
+            }
+        } catch {
+            await MainActor.run {
+                isProcessing = false
+                errorMessage = "Upload failed: \(error.localizedDescription)"
+            }
+        }
     }
 }
 

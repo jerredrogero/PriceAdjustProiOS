@@ -1,6 +1,12 @@
 import SwiftUI
+
+extension NSNotification.Name {
+    static let navigateToOnSale = NSNotification.Name("navigateToOnSale")
+    static let navigateToReceipts = NSNotification.Name("navigateToReceipts") 
+    static let navigateToReceipt = NSNotification.Name("navigateToReceipt")
+}
 import CoreData
-import KeychainAccess
+// import KeychainAccess
 import Combine
 
 struct ContentView: View {
