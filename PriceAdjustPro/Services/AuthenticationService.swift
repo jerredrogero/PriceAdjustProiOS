@@ -223,11 +223,17 @@ class AuthenticationService: ObservableObject {
     
     func enableBiometricAuth() {
         guard let email = biometricSetupEmail,
-              let password = biometricSetupPassword else { return }
+              let password = biometricSetupPassword else { 
+            AppLogger.logWarning("No stored credentials for biometric setup", context: "BiometricAuth")
+            return 
+        }
+        
+        AppLogger.logSecurityEvent("Starting biometric auth setup for user: \(email)")
         
         Task {
             let biometricService = BiometricAuthService.shared
-            let success = await biometricService.setupBiometricAuth(email: email, password: password)
+            // Skip credential validation since user just logged in successfully
+            let success = await biometricService.setupBiometricAuth(email: email, password: password, skipValidation: true)
             
             await MainActor.run {
                 shouldOfferBiometricSetup = false
@@ -235,7 +241,9 @@ class AuthenticationService: ObservableObject {
                 biometricSetupPassword = nil
                 
                 if !success {
-                    errorMessage = biometricService.biometricError ?? "Failed to enable biometric authentication"
+                    let errorMsg = biometricService.biometricError ?? "Failed to enable biometric authentication"
+                    AppLogger.logWarning("Biometric setup failed: \(errorMsg)", context: "BiometricAuth")
+                    errorMessage = errorMsg
                 }
             }
         }
@@ -265,8 +273,9 @@ class AuthenticationService: ObservableObject {
 //     }
 // }
 
-// MARK: - BiometricAuthService (Included here to resolve build target issue)
+// MARK: - Note: Using separate BiometricAuthService.swift file
 
+// MARK: - Temporary BiometricAuthService (until separate file is added to build target)
 class BiometricAuthService: ObservableObject {
     static let shared = BiometricAuthService()
     
@@ -282,8 +291,6 @@ class BiometricAuthService: ObservableObject {
         checkBiometricAvailability()
         loadBiometricPreference()
     }
-    
-    // MARK: - Biometric Availability
     
     func checkBiometricAvailability() {
         let context = LAContext()
@@ -316,8 +323,6 @@ class BiometricAuthService: ObservableObject {
         }
     }
     
-    // MARK: - Biometric Settings
-    
     private func loadBiometricPreference() {
         isBiometricEnabled = userDefaults.bool(forKey: biometricEnabledKey)
     }
@@ -327,15 +332,11 @@ class BiometricAuthService: ObservableObject {
         userDefaults.set(enabled, forKey: biometricEnabledKey)
         
         if !enabled {
-            // Clear stored credentials when biometric auth is disabled
             clearStoredCredentials()
         }
     }
     
-    // MARK: - Credential Storage
-    
     func storeCredentials(email: String, password: String, isInitialSetup: Bool = false) -> Bool {
-        // During initial setup, we don't check isBiometricEnabled since we're in the process of enabling it
         if !isInitialSetup {
             guard isBiometricEnabled else { 
                 AppLogger.logWarning("Attempted to store credentials when biometric auth is disabled", context: "BiometricAuth")
@@ -369,11 +370,9 @@ class BiometricAuthService: ObservableObject {
         guard isBiometricEnabled else { return nil }
         
         do {
-            // First authenticate with biometrics
             let success = try await authenticateWithBiometrics(reason: "Access your saved login credentials")
             
             if success {
-                // Retrieve credentials from keychain
                 guard let data = KeychainHelper.load(forKey: storedCredentialsKey) else {
                     AppLogger.logWarning("No stored credentials found", context: "Biometric auth")
                     return nil
@@ -406,8 +405,6 @@ class BiometricAuthService: ObservableObject {
         AppLogger.logSecurityEvent("Biometric credentials cleared")
     }
     
-    // MARK: - Biometric Authentication
-    
     func authenticateWithBiometrics(reason: String) async throws -> Bool {
         let context = LAContext()
         context.localizedFallbackTitle = "Use Passcode"
@@ -433,9 +430,7 @@ class BiometricAuthService: ObservableObject {
         }
     }
     
-    // MARK: - Setup Biometric Auth
-    
-    func setupBiometricAuth(email: String, password: String) async -> Bool {
+    func setupBiometricAuth(email: String, password: String, skipValidation: Bool = false) async -> Bool {
         guard isBiometricAvailable else {
             await MainActor.run {
                 biometricError = "Biometric authentication is not available on this device"
@@ -443,11 +438,10 @@ class BiometricAuthService: ObservableObject {
             return false
         }
         
-        // First validate the credentials by attempting to login
-        AppLogger.logSecurityEvent("Validating credentials before storing for biometric auth")
-        
-        do {
-            // Test the credentials with the server
+        // Skip credential validation if called from post-login flow
+        if !skipValidation {
+            AppLogger.logSecurityEvent("Validating credentials before storing for biometric auth")
+            
             let isValidCredentials = await validateCredentials(email: email, password: password)
             
             if !isValidCredentials {
@@ -456,8 +450,11 @@ class BiometricAuthService: ObservableObject {
                 }
                 return false
             }
-            
-            // If credentials are valid, proceed with biometric setup
+        } else {
+            AppLogger.logSecurityEvent("Skipping credential validation (called from post-login flow)")
+        }
+        
+        do {
             let success = try await authenticateWithBiometrics(
                 reason: "Enable \(biometricTypeString) for quick and secure login"
             )
@@ -500,7 +497,6 @@ class BiometricAuthService: ObservableObject {
                         cancellable?.cancel()
                     },
                     receiveValue: { response in
-                        // Check if this is actually an error response
                         if response.isError || response.user == nil {
                             continuation.resume(returning: false)
                         } else {
@@ -513,8 +509,6 @@ class BiometricAuthService: ObservableObject {
         }
     }
 }
-
-// MARK: - Biometric Errors
 
 enum BiometricError: Error, LocalizedError {
     case keychainStorageFailed
@@ -536,31 +530,19 @@ enum BiometricError: Error, LocalizedError {
     }
 }
 
-// MARK: - Keychain Helper
-
 struct KeychainHelper {
     static func save(data: Data, forKey key: String) -> Bool {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrAccount as String: key,
             kSecValueData as String: data,
-            // Use a more simulator-friendly accessibility option
-            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlocked
+            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
         ]
         
-        // Delete any existing item
-        let deleteStatus = SecItemDelete(query as CFDictionary)
-        AppLogger.logSecurityEvent("Keychain delete attempt: \(deleteStatus)")
+        SecItemDelete(query as CFDictionary)
         
-        // Add new item
-        let addStatus = SecItemAdd(query as CFDictionary, nil)
-        AppLogger.logSecurityEvent("Keychain add attempt: \(addStatus) (errSecSuccess = \(errSecSuccess))")
-        
-        if addStatus != errSecSuccess {
-            AppLogger.logWarning("Keychain storage failed with status: \(addStatus)", context: "KeychainHelper")
-        }
-        
-        return addStatus == errSecSuccess
+        let status = SecItemAdd(query as CFDictionary, nil)
+        return status == errSecSuccess
     }
     
     static func load(forKey key: String) -> Data? {
@@ -585,4 +567,4 @@ struct KeychainHelper {
         
         SecItemDelete(query as CFDictionary)
     }
-} 
+}

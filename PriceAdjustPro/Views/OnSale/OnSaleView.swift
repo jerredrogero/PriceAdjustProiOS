@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct OnSaleView: View {
+    @EnvironmentObject var themeManager: ThemeManager
     @StateObject private var viewModel = OnSaleViewModel()
     @State private var searchText = ""
     @State private var selectedCategory = "All"
@@ -8,7 +9,7 @@ struct OnSaleView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Color.black.ignoresSafeArea()
+                themeManager.backgroundColor.ignoresSafeArea()
                 
                 VStack(spacing: 0) {
                 // Search and Filter Bar
@@ -16,14 +17,15 @@ struct OnSaleView: View {
                     // Search Bar
                     HStack {
                         Image(systemName: "magnifyingglass")
-                            .foregroundColor(.gray)
+                            .foregroundColor(themeManager.secondaryTextColor)
                         
                         TextField("Search items...", text: $searchText)
                             .textFieldStyle(PlainTextFieldStyle())
+                            .foregroundColor(themeManager.primaryTextColor)
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
-                    .background(Color(red: 0.15, green: 0.15, blue: 0.15))
+                    .background(themeManager.cardBackgroundColor)
                     .cornerRadius(10)
                     
                     // Category Filter
@@ -41,7 +43,7 @@ struct OnSaleView: View {
                     }
                 }
                 .padding()
-                .background(Color(red: 0.1, green: 0.1, blue: 0.1))
+                .background(themeManager.cardBackgroundColor)
                 .shadow(radius: 1)
                 
                 // Content
@@ -59,10 +61,10 @@ struct OnSaleView: View {
                         Text("Feature Coming Soon")
                             .font(.title2)
                             .fontWeight(.semibold)
-                            .foregroundColor(.white)
+                            .foregroundColor(themeManager.primaryTextColor)
                         
                         Text("The On Sale feature is being developed and will be available in a future update.")
-                            .foregroundColor(.gray)
+                            .foregroundColor(themeManager.secondaryTextColor)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal)
                         
@@ -82,10 +84,10 @@ struct OnSaleView: View {
                         Text("No Sales Found")
                             .font(.title2)
                             .fontWeight(.semibold)
-                            .foregroundColor(.white)
+                            .foregroundColor(themeManager.primaryTextColor)
                         
                         Text("Try adjusting your search or category filter")
-                            .foregroundColor(.gray)
+                            .foregroundColor(themeManager.secondaryTextColor)
                             .multilineTextAlignment(.center)
                     }
                     Spacer()
@@ -162,6 +164,7 @@ struct OnSaleView: View {
 }
 
 struct CategoryChip: View {
+    @EnvironmentObject var themeManager: ThemeManager
     let title: String
     let isSelected: Bool
     let action: () -> Void
@@ -173,25 +176,26 @@ struct CategoryChip: View {
                 .fontWeight(.medium)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
-                .background(isSelected ? Color.red : Color(red: 0.15, green: 0.15, blue: 0.15))
-                .foregroundColor(isSelected ? .white : .white)
+                .background(isSelected ? themeManager.accentColor : themeManager.cardBackgroundColor)
+                .foregroundColor(isSelected ? .white : themeManager.primaryTextColor)
                 .cornerRadius(20)
         }
     }
 }
 
 struct PromotionsSummaryCard: View {
+    @EnvironmentObject var themeManager: ThemeManager
     let promotions: [Promotion]
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "megaphone.fill")
-                    .foregroundColor(.orange)
+                    .foregroundColor(themeManager.warningColor)
                 Text("Active Promotions")
                     .font(.headline)
                     .fontWeight(.semibold)
-                    .foregroundColor(.white)
+                    .foregroundColor(themeManager.primaryTextColor)
             }
             
             ForEach(promotions.prefix(3), id: \.title) { promotion in
@@ -200,12 +204,12 @@ struct PromotionsSummaryCard: View {
                         Text(promotion.title)
                             .font(.subheadline)
                             .fontWeight(.medium)
-                            .foregroundColor(.white)
+                            .foregroundColor(themeManager.primaryTextColor)
                         
                         if let count = promotion.itemsCount {
                             Text("\(count) items")
                                 .font(.caption)
-                                .foregroundColor(.gray)
+                                .foregroundColor(themeManager.secondaryTextColor)
                         }
                     }
                     
@@ -215,17 +219,17 @@ struct PromotionsSummaryCard: View {
                         Text("\(promotion.daysRemaining) days left")
                             .font(.caption)
                             .fontWeight(.medium)
-                            .foregroundColor(promotion.daysRemaining <= 3 ? .red : .orange)
+                            .foregroundColor(promotion.daysRemaining <= 3 ? themeManager.errorColor : themeManager.warningColor)
                         
                         Text(formatEndDate(promotion.saleEndDate))
                             .font(.caption)
-                            .foregroundColor(.gray)
+                            .foregroundColor(themeManager.secondaryTextColor)
                     }
                                   }
               }
           }
           .padding()
-          .background(Color(red: 0.15, green: 0.15, blue: 0.15))
+          .background(themeManager.cardBackgroundColor)
           .cornerRadius(12)
           .shadow(radius: 2)
       }
@@ -242,6 +246,7 @@ struct PromotionsSummaryCard: View {
   }
   
   struct SaleItemCard: View {
+    @EnvironmentObject var themeManager: ThemeManager
     let item: SaleItem
     
     var body: some View {
@@ -252,11 +257,11 @@ struct PromotionsSummaryCard: View {
                     Text(item.description)
                         .font(.headline)
                         .lineLimit(2)
-                        .foregroundColor(.white)
+                        .foregroundColor(themeManager.primaryTextColor)
                     
                     Text("Item: \(item.itemCode)")
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundColor(themeManager.secondaryTextColor)
                 }
                 
                 Spacer()
@@ -270,12 +275,12 @@ struct PromotionsSummaryCard: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Regular Price")
                             .font(.caption)
-                            .foregroundColor(.gray)
+                            .foregroundColor(themeManager.secondaryTextColor)
                         
                         Text("$\(regularPrice, specifier: "%.2f")")
                             .font(.subheadline)
                             .strikethrough()
-                            .foregroundColor(.gray)
+                            .foregroundColor(themeManager.secondaryTextColor)
                     }
                 }
                 
@@ -283,12 +288,12 @@ struct PromotionsSummaryCard: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Sale Price")
                             .font(.caption)
-                            .foregroundColor(.gray)
+                            .foregroundColor(themeManager.secondaryTextColor)
                         
                         Text("$\(salePrice, specifier: "%.2f")")
                             .font(.title3)
                             .fontWeight(.semibold)
-                            .foregroundColor(.green)
+                            .foregroundColor(themeManager.successColor)
                     }
                 }
                 
@@ -298,12 +303,12 @@ struct PromotionsSummaryCard: View {
                     VStack(alignment: .trailing, spacing: 4) {
                         Text("You Save")
                             .font(.caption)
-                            .foregroundColor(.gray)
+                            .foregroundColor(themeManager.secondaryTextColor)
                         
                         Text("$\(savings, specifier: "%.2f")")
                             .font(.title3)
                             .fontWeight(.bold)
-                            .foregroundColor(.red)
+                            .foregroundColor(themeManager.errorColor)
                     }
                 }
             }
@@ -313,26 +318,26 @@ struct PromotionsSummaryCard: View {
                 Text(item.promotion.title)
                     .font(.subheadline)
                     .fontWeight(.medium)
-                    .foregroundColor(.red)
+                    .foregroundColor(themeManager.accentColor)
                 
                 HStack {
                     Image(systemName: "clock")
-                        .foregroundColor(item.promotion.daysRemaining <= 3 ? .red : .orange)
+                        .foregroundColor(item.promotion.daysRemaining <= 3 ? themeManager.errorColor : themeManager.warningColor)
                     
                     Text("\(item.promotion.daysRemaining) days remaining")
                         .font(.subheadline)
-                        .foregroundColor(item.promotion.daysRemaining <= 3 ? .red : .white)
+                        .foregroundColor(item.promotion.daysRemaining <= 3 ? themeManager.errorColor : themeManager.primaryTextColor)
                     
                     Spacer()
                     
                     Text("Ends \(formatEndDate(item.promotion.saleEndDate))")
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundColor(themeManager.secondaryTextColor)
                 }
             }
                   }
           .padding()
-          .background(Color(red: 0.15, green: 0.15, blue: 0.15))
+          .background(themeManager.cardBackgroundColor)
           .cornerRadius(12)
           .shadow(radius: 2)
       }
@@ -395,4 +400,5 @@ struct PromotionsSummaryCard: View {
 
 #Preview {
     OnSaleView()
+        .environmentObject(ThemeManager())
 } 

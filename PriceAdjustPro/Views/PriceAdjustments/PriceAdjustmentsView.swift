@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct PriceAdjustmentsView: View {
+    @EnvironmentObject var themeManager: ThemeManager
     @StateObject private var viewModel = PriceAdjustmentsViewModel()
     @State private var showingAlert = false
     @State private var alertMessage = ""
@@ -8,7 +9,7 @@ struct PriceAdjustmentsView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Color.black.ignoresSafeArea()
+                themeManager.backgroundColor.ignoresSafeArea()
                 
                 if viewModel.isLoading {
                     ProgressView("Loading price adjustments...")
@@ -22,11 +23,11 @@ struct PriceAdjustmentsView: View {
                         Text("No Price Adjustments Available")
                             .font(.title2)
                             .fontWeight(.semibold)
-                            .foregroundColor(.white)
+                            .foregroundColor(themeManager.primaryTextColor)
                         
                         Text("You're all caught up! We'll notify you when any of your purchased items go on sale.")
                             .multilineTextAlignment(.center)
-                            .foregroundColor(.gray)
+                            .foregroundColor(themeManager.secondaryTextColor)
                             .padding(.horizontal)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -38,15 +39,15 @@ struct PriceAdjustmentsView: View {
                                 VStack(spacing: 8) {
                                     Text("Total Potential Savings")
                                         .font(.headline)
-                                        .foregroundColor(.gray)
+                                        .foregroundColor(themeManager.secondaryTextColor)
                                     
                                     Text("$\(viewModel.totalPotentialSavings, specifier: "%.2f")")
                                         .font(.largeTitle)
                                         .fontWeight(.bold)
-                                        .foregroundColor(.green)
+                                        .foregroundColor(themeManager.successColor)
                                 }
                                 .padding()
-                                .background(Color(red: 0.15, green: 0.15, blue: 0.15))
+                                .background(themeManager.cardBackgroundColor)
                                 .cornerRadius(12)
                                 .shadow(radius: 2)
                             }
@@ -85,6 +86,7 @@ struct PriceAdjustmentsView: View {
 }
 
 struct PriceAdjustmentCard: View {
+    @EnvironmentObject var themeManager: ThemeManager
     let adjustment: PriceAdjustment
     let onDismiss: () -> Void
     
@@ -96,11 +98,11 @@ struct PriceAdjustmentCard: View {
                     Text(adjustment.description)
                         .font(.headline)
                         .lineLimit(2)
-                        .foregroundColor(.white)
+                        .foregroundColor(themeManager.primaryTextColor)
                     
                     Text("Item: \(adjustment.itemCode)")
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundColor(themeManager.secondaryTextColor)
                 }
                 
                 Spacer()
@@ -117,24 +119,24 @@ struct PriceAdjustmentCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("You Paid")
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundColor(themeManager.secondaryTextColor)
                     Text("$\(adjustment.currentPrice, specifier: "%.2f")")
                         .font(.title3)
                         .fontWeight(.semibold)
-                        .foregroundColor(.white)
+                        .foregroundColor(themeManager.primaryTextColor)
                 }
                 
                 Image(systemName: "arrow.right")
-                    .foregroundColor(.gray)
+                    .foregroundColor(themeManager.secondaryTextColor)
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Now On Sale")
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundColor(themeManager.secondaryTextColor)
                     Text("$\(adjustment.lowerPrice, specifier: "%.2f")")
                         .font(.title3)
                         .fontWeight(.semibold)
-                        .foregroundColor(.green)
+                        .foregroundColor(themeManager.successColor)
                 }
                 
                 Spacer()
@@ -142,11 +144,11 @@ struct PriceAdjustmentCard: View {
                 VStack(alignment: .trailing, spacing: 4) {
                     Text("Potential Refund")
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundColor(themeManager.secondaryTextColor)
                     Text("$\(adjustment.priceDifference, specifier: "%.2f")")
                         .font(.title2)
                         .fontWeight(.bold)
-                        .foregroundColor(.green)
+                        .foregroundColor(themeManager.successColor)
                 }
             }
             .padding(.vertical, 8)
@@ -160,23 +162,23 @@ struct PriceAdjustmentCard: View {
                         .foregroundColor(.blue)
                     Text(adjustment.storeLocation)
                         .font(.subheadline)
-                        .foregroundColor(.white)
+                        .foregroundColor(themeManager.primaryTextColor)
                 }
                 
                 HStack {
                     Image(systemName: "calendar")
-                        .foregroundColor(.orange)
+                        .foregroundColor(themeManager.warningColor)
                     Text("Purchased: \(formatDate(adjustment.purchaseDate))")
                         .font(.subheadline)
-                        .foregroundColor(.white)
+                        .foregroundColor(themeManager.primaryTextColor)
                 }
                 
                 HStack {
                     Image(systemName: "clock")
-                        .foregroundColor(adjustment.daysRemaining <= 3 ? .red : .primary)
+                        .foregroundColor(adjustment.daysRemaining <= 3 ? themeManager.errorColor : themeManager.primaryTextColor)
                     Text("\(adjustment.daysRemaining) days remaining")
                         .font(.subheadline)
-                        .foregroundColor(adjustment.daysRemaining <= 3 ? .red : .white)
+                        .foregroundColor(adjustment.daysRemaining <= 3 ? themeManager.errorColor : themeManager.primaryTextColor)
                 }
                 
                 // Confidence and action
@@ -187,10 +189,10 @@ struct PriceAdjustmentCard: View {
                     
                     if adjustment.isOfficial {
                         Image(systemName: "checkmark.seal.fill")
-                            .foregroundColor(.green)
+                            .foregroundColor(themeManager.successColor)
                         Text("Official")
                             .font(.caption)
-                            .foregroundColor(.green)
+                            .foregroundColor(themeManager.successColor)
                     }
                 }
             }
@@ -198,7 +200,7 @@ struct PriceAdjustmentCard: View {
             // Source Description
             Text(adjustment.sourceDescription)
                 .font(.caption)
-                .foregroundColor(.gray)
+                .foregroundColor(themeManager.secondaryTextColor)
                 .padding(.top, 4)
             
             // Action Required
@@ -211,7 +213,7 @@ struct PriceAdjustmentCard: View {
             }
         }
         .padding()
-        .background(Color(red: 0.15, green: 0.15, blue: 0.15))
+        .background(themeManager.cardBackgroundColor)
         .cornerRadius(12)
         .shadow(radius: 2)
     }
@@ -270,4 +272,5 @@ struct ConfidenceBadge: View {
 
 #Preview {
     PriceAdjustmentsView()
+        .environmentObject(ThemeManager())
 } 

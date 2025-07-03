@@ -69,17 +69,26 @@ class BiometricAuthService: ObservableObject {
     
     // MARK: - Credential Storage
     
-    func storeCredentials(email: String, password: String) -> Bool {
-        guard isBiometricEnabled else { return false }
+    func storeCredentials(email: String, password: String, isInitialSetup: Bool = false) -> Bool {
+        // During initial setup, we don't check isBiometricEnabled since we're in the process of enabling it
+        if !isInitialSetup {
+            guard isBiometricEnabled else { 
+                AppLogger.logWarning("Attempted to store credentials when biometric auth is disabled", context: "BiometricAuth")
+                return false 
+            }
+        }
         
+        AppLogger.logSecurityEvent("Attempting to store biometric credentials for: \(email)")
         let credentials = ["email": email, "password": password]
         
         do {
             let data = try JSONEncoder().encode(credentials)
+            AppLogger.logSecurityEvent("Credentials encoded successfully, attempting keychain storage")
+            
             let success = KeychainHelper.save(data: data, forKey: storedCredentialsKey)
             
             if success {
-                AppLogger.logSecurityEvent("Biometric credentials stored")
+                AppLogger.logSecurityEvent("Biometric credentials stored successfully")
             } else {
                 AppLogger.logError(BiometricError.keychainStorageFailed, context: "Store credentials")
             }
@@ -161,12 +170,29 @@ class BiometricAuthService: ObservableObject {
     
     // MARK: - Setup Biometric Auth
     
-    func setupBiometricAuth(email: String, password: String) async -> Bool {
+    func setupBiometricAuth(email: String, password: String, skipValidation: Bool = false) async -> Bool {
         guard isBiometricAvailable else {
             await MainActor.run {
                 biometricError = "Biometric authentication is not available on this device"
             }
             return false
+        }
+        
+        // Skip credential validation if called from post-login flow
+        if !skipValidation {
+            AppLogger.logSecurityEvent("Validating credentials before storing for biometric auth")
+            
+            // Test the credentials with the server
+            let isValidCredentials = await validateCredentials(email: email, password: password)
+            
+            if !isValidCredentials {
+                await MainActor.run {
+                    biometricError = "Invalid password. Please enter your correct account password."
+                }
+                return false
+            }
+        } else {
+            AppLogger.logSecurityEvent("Skipping credential validation (called from post-login flow)")
         }
         
         do {
@@ -175,7 +201,7 @@ class BiometricAuthService: ObservableObject {
             )
             
             if success {
-                let stored = storeCredentials(email: email, password: password)
+                let stored = storeCredentials(email: email, password: password, isInitialSetup: true)
                 if stored {
                     setBiometricEnabled(true)
                     AppLogger.logSecurityEvent("Biometric authentication setup completed")
@@ -195,6 +221,33 @@ class BiometricAuthService: ObservableObject {
             }
             AppLogger.logError(error, context: "Setup biometric auth")
             return false
+        }
+    }
+    
+    private func validateCredentials(email: String, password: String) async -> Bool {
+        return await withCheckedContinuation { continuation in
+            var cancellable: AnyCancellable?
+            
+            cancellable = APIService.shared.login(email: email, password: password)
+                .receive(on: DispatchQueue.main)
+                .sink(
+                    receiveCompletion: { completion in
+                        if case .failure(_) = completion {
+                            continuation.resume(returning: false)
+                        }
+                        cancellable?.cancel()
+                    },
+                    receiveValue: { response in
+                        // Check if this is actually an error response
+                        if response.isError || response.user == nil {
+                            continuation.resume(returning: false)
+                        } else {
+                            AppLogger.logSecurityEvent("Credentials validated successfully for biometric setup")
+                            continuation.resume(returning: true)
+                        }
+                        cancellable?.cancel()
+                    }
+                )
         }
     }
 }

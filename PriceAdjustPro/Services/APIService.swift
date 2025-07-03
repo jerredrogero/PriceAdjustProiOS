@@ -311,25 +311,92 @@ class APIService: ObservableObject {
             throw APIError.invalidURL
         }
         
+        // Try with CSRF token first, then fallback to simpler approach
+        do {
+            // First attempt: Try with CSRF token
+            try await performDeleteWithCSRF(url: url)
+            AppLogger.logSecurityEvent("Receipt deleted successfully with CSRF protection")
+        } catch APIError.csrfError {
+            AppLogger.logWarning("CSRF token acquisition failed for delete, trying direct request", context: "API request")
+            // Fallback: Try without CSRF token
+            try await performDeleteWithoutCSRF(url: url)
+            AppLogger.logWarning("Receipt deleted with fallback method (no CSRF)", context: "API request")
+        } catch {
+            AppLogger.logError(error, context: "Delete receipt failed")
+            throw error
+        }
+    }
+    
+    private func performDeleteWithCSRF(url: URL) async throws {
+        AppLogger.logSecurityEvent("Attempting to get CSRF token for DELETE request")
+        
+        // Get CSRF token
+        let csrfToken: String = try await withCheckedThrowingContinuation { continuation in
+            ensureCSRFToken()
+                .sink(
+                    receiveCompletion: { completion in
+                        if case .failure(let error) = completion {
+                            AppLogger.logError(error, context: "CSRF token acquisition for DELETE")
+                            continuation.resume(throwing: error)
+                        }
+                    },
+                    receiveValue: { token in
+                        AppLogger.logSecurityEvent("CSRF token acquired successfully for DELETE")
+                        continuation.resume(returning: token)
+                    }
+                )
+                .store(in: &cancellables)
+        }
+        
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(csrfToken, forHTTPHeaderField: "X-CSRFToken")
+        request.setValue(baseURL, forHTTPHeaderField: "Referer")
+        
+        AppLogger.apiCall("DELETE", to: url.absoluteString)
+        AppLogger.logSecurityEvent("Using CSRF token for DELETE request: \(csrfToken.prefix(10))...")
+        
+        let (responseData, httpResponse) = try await urlSession.data(for: request)
+        
+        if let httpResponse = httpResponse as? HTTPURLResponse {
+            AppLogger.apiSuccess(httpResponse.statusCode, from: url.absoluteString)
+            
+            // Log response for debugging
+            if !responseData.isEmpty {
+                AppLogger.logResponseData(responseData, from: url.absoluteString)
+            }
+            
+            if httpResponse.statusCode < 200 || httpResponse.statusCode >= 300 {
+                AppLogger.logError(APIError.serverError(httpResponse.statusCode), context: "Delete receipt HTTP status")
+                throw APIError.serverError(httpResponse.statusCode)
+            }
+        }
+    }
+    
+    private func performDeleteWithoutCSRF(url: URL) async throws {
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         // Django session-based auth uses cookies, not Authorization headers
         
-        do {
-            let (_, httpResponse) = try await urlSession.data(for: request)
+        AppLogger.apiCall("DELETE", to: url.absoluteString)
+        AppLogger.logWarning("Performing DELETE without CSRF protection (fallback method)", context: "API request")
+        
+        let (responseData, httpResponse) = try await urlSession.data(for: request)
+        
+        if let httpResponse = httpResponse as? HTTPURLResponse {
+            AppLogger.apiSuccess(httpResponse.statusCode, from: url.absoluteString)
             
-            // Check HTTP status code
-            if let httpResponse = httpResponse as? HTTPURLResponse {
-                AppLogger.apiSuccess(httpResponse.statusCode, from: url.absoluteString)
-                
-                if httpResponse.statusCode < 200 || httpResponse.statusCode >= 300 {
-                    AppLogger.logError(APIError.serverError(httpResponse.statusCode), context: "Delete receipt HTTP status")
-                    throw APIError.serverError(httpResponse.statusCode)
-                }
+            // Log response for debugging
+            if !responseData.isEmpty {
+                AppLogger.logResponseData(responseData, from: url.absoluteString)
             }
-        } catch {
-            AppLogger.logError(error, context: "Delete receipt network request")
-            throw APIError.networkError(error)
+            
+            if httpResponse.statusCode < 200 || httpResponse.statusCode >= 300 {
+                AppLogger.logError(APIError.serverError(httpResponse.statusCode), context: "Delete receipt HTTP status (no CSRF)")
+                throw APIError.serverError(httpResponse.statusCode)
+            }
         }
     }
     
@@ -669,6 +736,9 @@ class APIService: ObservableObject {
                 // This is likely a success case, so we'll throw a special error indicating success
                 throw APIError.uploadSuccessButNoData
             }
+        } catch APIError.uploadSuccessButNoData {
+            // Re-throw this success error without wrapping it
+            throw APIError.uploadSuccessButNoData
         } catch {
             AppLogger.logError(error, context: "Upload file network request")
             throw APIError.networkError(error)

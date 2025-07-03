@@ -20,7 +20,7 @@ struct ReceiptListView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Color.black.ignoresSafeArea()
+                themeManager.backgroundColor.ignoresSafeArea()
                 
                 VStack {
                     // Search Bar
@@ -53,7 +53,7 @@ struct ReceiptListView: View {
                         }
                                             } label: {
                             Label("Sort", systemImage: "arrow.up.arrow.down")
-                                .foregroundColor(.red)
+                                .foregroundColor(themeManager.accentColor)
                         }
                     
                     Spacer()
@@ -66,7 +66,7 @@ struct ReceiptListView: View {
                             Image(systemName: "arrow.clockwise")
                             Text("Sync")
                         }
-                        .foregroundColor(.red)
+                        .foregroundColor(themeManager.accentColor)
                     }
                     .disabled(receiptStore.isLoading)
                 }
@@ -89,7 +89,7 @@ struct ReceiptListView: View {
                                 }
                             }
                             .onDelete(perform: receiptStore.deleteReceipts)
-                            .listRowBackground(Color(red: 0.15, green: 0.15, blue: 0.15))
+                            .listRowBackground(themeManager.listRowBackgroundColor)
                         }
                         .background(Color.clear)
                         .onAppear {
@@ -104,7 +104,7 @@ struct ReceiptListView: View {
                 // Error Message
                 if let errorMessage = receiptStore.errorMessage {
                     Text(errorMessage)
-                        .foregroundColor(.red)
+                        .foregroundColor(themeManager.errorColor)
                         .font(.caption)
                         .padding()
                 }
@@ -115,13 +115,13 @@ struct ReceiptListView: View {
                     showingSettings = true
                 }) {
                     Image(systemName: "gear")
-                        .foregroundColor(.red)
+                        .foregroundColor(themeManager.accentColor)
                 },
                 trailing: Button(action: {
                     showingAddReceipt = true
                 }) {
                     Image(systemName: "plus")
-                        .foregroundColor(.red)
+                        .foregroundColor(themeManager.accentColor)
                 }
             )
             .searchable(text: $searchText)
@@ -177,31 +177,32 @@ struct ReceiptListView: View {
 }
 
 struct ReceiptRowView: View {
+    @EnvironmentObject var themeManager: ThemeManager
     let receipt: Receipt
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(receipt.storeName ?? "Unknown Store")
                 .font(.headline)
-                .foregroundColor(.white)
+                .foregroundColor(themeManager.primaryTextColor)
             
             HStack {
                 Text(receipt.date ?? Date(), style: .date)
                     .font(.subheadline)
-                    .foregroundColor(.gray)
+                    .foregroundColor(themeManager.secondaryTextColor)
                 
                 Spacer()
                 
                 Text(String(format: "$%.2f", receipt.total))
                     .font(.title3)
                     .fontWeight(.semibold)
-                    .foregroundColor(.white)
+                    .foregroundColor(themeManager.primaryTextColor)
             }
             
             if let receiptNumber = receipt.receiptNumber {
                 Text("Receipt #: \(receiptNumber)")
                     .font(.caption)
-                    .foregroundColor(.gray)
+                    .foregroundColor(themeManager.secondaryTextColor)
             }
         }
         .padding(.vertical, 4)
@@ -209,12 +210,13 @@ struct ReceiptRowView: View {
 }
 
 struct SearchBar: View {
+    @EnvironmentObject var themeManager: ThemeManager
     @Binding var text: String
     
     var body: some View {
         HStack {
             Image(systemName: "magnifyingglass")
-                .foregroundColor(.gray)
+                .foregroundColor(themeManager.secondaryTextColor)
             
             TextField("Search receipts...", text: $text)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -239,81 +241,86 @@ struct SearchBar: View {
 }
 
 struct EmptyStateView: View {
+    @EnvironmentObject var themeManager: ThemeManager
+    
     var body: some View {
         VStack(spacing: 20) {
             Image(systemName: "receipt")
                 .font(.system(size: 60))
-                .foregroundColor(.gray)
+                .foregroundColor(themeManager.secondaryTextColor)
             
             Text("No Receipts Yet")
                 .font(.title2)
                 .fontWeight(.semibold)
-                .foregroundColor(.white)
+                .foregroundColor(themeManager.primaryTextColor)
             
             Text("Tap the + button to add your first receipt")
                 .font(.body)
-                .foregroundColor(.gray)
+                .foregroundColor(themeManager.secondaryTextColor)
                 .multilineTextAlignment(.center)
             
             Button("Add Receipt") {
                 // This could trigger the add receipt sheet
             }
             .padding()
-            .background(Color.red)
+            .background(themeManager.accentColor)
             .foregroundColor(.white)
             .cornerRadius(10)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black)
+        .background(themeManager.backgroundColor)
     }
 }
 
 struct SearchEmptyStateView: View {
+    @EnvironmentObject var themeManager: ThemeManager
     let searchText: String
     
     var body: some View {
         VStack(spacing: 20) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 60))
-                .foregroundColor(.gray)
+                .foregroundColor(themeManager.secondaryTextColor)
             
             Text("No Results Found")
                 .font(.title2)
                 .fontWeight(.semibold)
-                .foregroundColor(.white)
+                .foregroundColor(themeManager.primaryTextColor)
             
             Text("No receipts match '\(searchText)'")
                 .font(.body)
-                .foregroundColor(.gray)
+                .foregroundColor(themeManager.secondaryTextColor)
                 .multilineTextAlignment(.center)
             
             Text("Try searching for store names, receipt numbers, or item names")
                 .font(.caption)
-                .foregroundColor(.gray)
+                .foregroundColor(themeManager.secondaryTextColor)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black)
+        .background(themeManager.backgroundColor)
     }
 }
 
 struct LoadingView: View {
+    @EnvironmentObject var themeManager: ThemeManager
+    
     var body: some View {
         ZStack {
-            Color.black.opacity(0.3)
+            themeManager.backgroundColor.opacity(0.3)
                 .edgesIgnoringSafeArea(.all)
             
             VStack(spacing: 20) {
                 ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle(tint: .red))
+                    .progressViewStyle(CircularProgressViewStyle(tint: themeManager.accentColor))
                     .scaleEffect(1.5)
                 
                 Text("Loading...")
                     .font(.headline)
-                    .foregroundColor(.white)
+                    .foregroundColor(themeManager.primaryTextColor)
             }
             .padding(30)
-            .background(Color.black.opacity(0.8))
+            .background(themeManager.cardBackgroundColor.opacity(0.9))
             .cornerRadius(15)
         }
     }
@@ -328,8 +335,8 @@ struct DetailViewWrapper: View {
     
     var body: some View {
         ZStack {
-            // Dark background
-            Color.black.ignoresSafeArea()
+            // Theme background
+            themeManager.backgroundColor.ignoresSafeArea()
             
             ScrollView {
                 VStack(spacing: 0) {
@@ -338,21 +345,21 @@ struct DetailViewWrapper: View {
                         Text(receipt.storeName ?? "Unknown Store")
                             .font(.title)
                             .fontWeight(.bold)
-                            .foregroundColor(.white)
+                            .foregroundColor(themeManager.primaryTextColor)
                         
                         Text("Transaction #: \(receipt.receiptNumber ?? "Unknown")")
                             .font(.subheadline)
-                            .foregroundColor(.gray)
+                            .foregroundColor(themeManager.secondaryTextColor)
                         
                         if let date = receipt.date {
                             Text("Date: \(formatDate(date))")
                                 .font(.subheadline)
-                                .foregroundColor(.gray)
+                                .foregroundColor(themeManager.secondaryTextColor)
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding()
-                    .background(Color(red: 0.15, green: 0.15, blue: 0.15))
+                    .background(themeManager.cardBackgroundColor)
                     
                     // Line Items Table
                     VStack(spacing: 0) {
@@ -390,7 +397,7 @@ struct DetailViewWrapper: View {
                         }
                         .padding(.horizontal)
                         .padding(.vertical, 12)
-                        .background(Color.red)
+                        .background(themeManager.accentColor)
                         
                         // Line Items
                         ForEach(receipt.lineItemsArray, id: \.objectID) { lineItem in
@@ -402,46 +409,79 @@ struct DetailViewWrapper: View {
                     VStack(spacing: 8) {
                         HStack {
                             Text("Subtotal:")
-                                .foregroundColor(.white)
+                                .foregroundColor(themeManager.primaryTextColor)
                             Spacer()
                             Text(formatCurrency(receipt.subtotal))
-                                .foregroundColor(.white)
+                                .foregroundColor(themeManager.primaryTextColor)
                         }
                         
                         HStack {
                             Text("Instant Savings:")
-                                .foregroundColor(.green)
+                                .foregroundColor(themeManager.successColor)
                             Spacer()
                             Text("-$10.00") // This should come from API data
-                                .foregroundColor(.green)
+                                .foregroundColor(themeManager.successColor)
                         }
                         
                         HStack {
                             Text("Tax:")
-                                .foregroundColor(.white)
+                                .foregroundColor(themeManager.primaryTextColor)
                             Spacer()
                             Text(formatCurrency(receipt.tax))
-                                .foregroundColor(.white)
+                                .foregroundColor(themeManager.primaryTextColor)
                         }
                         
                         Divider()
-                            .background(Color.gray)
+                            .background(themeManager.secondaryTextColor)
                         
                         HStack {
                             Text("Total:")
                                 .font(.title2)
                                 .fontWeight(.bold)
-                                .foregroundColor(.white)
+                                .foregroundColor(themeManager.primaryTextColor)
                             Spacer()
                             Text(formatCurrency(receipt.total))
                                 .font(.title2)
                                 .fontWeight(.bold)
-                                .foregroundColor(.white)
+                                .foregroundColor(themeManager.primaryTextColor)
                         }
                     }
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .trailing)
+                    
+                    // Notes Section (if notes exist)
+                    if let notes = receipt.notes, !notes.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Image(systemName: "note.text")
+                                    .foregroundColor(themeManager.accentColor)
+                                
+                                Text("Notes")
+                                    .font(.headline)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(themeManager.primaryTextColor)
+                            }
+                            
+                            Text(notes)
+                                .font(.body)
+                                .foregroundColor(themeManager.primaryTextColor)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(themeManager.backgroundColor.opacity(0.5))
+                                .cornerRadius(8)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(themeManager.secondaryTextColor.opacity(0.3), lineWidth: 1)
+                                )
+                        }
+                        .padding()
+                        .background(themeManager.cardBackgroundColor)
+                        .cornerRadius(12)
+                        .shadow(radius: 2)
+                    }
                 }
+                .padding(.top, 100) // Add padding to account for custom navigation bar
             }
         }
         .navigationBarHidden(true)
@@ -456,13 +496,13 @@ struct DetailViewWrapper: View {
                             Image(systemName: "arrow.left")
                             Text("Back to Receipts")
                         }
-                        .foregroundColor(.red)
+                        .foregroundColor(themeManager.accentColor)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
                         .background(Color.clear)
                         .overlay(
                             RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.red, lineWidth: 1)
+                                .stroke(themeManager.accentColor, lineWidth: 1)
                         )
                     }
                     
@@ -478,12 +518,12 @@ struct DetailViewWrapper: View {
                         .foregroundColor(.white)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
-                        .background(Color.red)
+                        .background(themeManager.accentColor)
                         .cornerRadius(8)
                     }
                 }
                 .padding()
-                .background(Color.black)
+                .background(themeManager.backgroundColor)
                 
                 Spacer()
             }
@@ -507,6 +547,7 @@ struct DetailViewWrapper: View {
 }
 
 struct LineItemDetailRow: View {
+    @EnvironmentObject var themeManager: ThemeManager
     let lineItem: LineItem
     
     var body: some View {
@@ -514,37 +555,37 @@ struct LineItemDetailRow: View {
             HStack {
                 Text(lineItem.itemCode ?? "")
                     .font(.caption)
-                    .foregroundColor(.white)
+                    .foregroundColor(themeManager.primaryTextColor)
                     .frame(width: 80, alignment: .leading)
                 
                 Text(lineItem.name ?? "Unknown Item")
                     .font(.caption)
-                    .foregroundColor(.white)
+                    .foregroundColor(themeManager.primaryTextColor)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 
                 Text(formatCurrency(lineItem.price))
                     .font(.caption)
-                    .foregroundColor(.white)
+                    .foregroundColor(themeManager.primaryTextColor)
                     .frame(width: 60, alignment: .trailing)
                 
                 Text("\(lineItem.quantity)")
                     .font(.caption)
-                    .foregroundColor(.white)
+                    .foregroundColor(themeManager.primaryTextColor)
                     .frame(width: 60, alignment: .center)
                 
                 VStack(alignment: .trailing, spacing: 2) {
                     Text(formatCurrency(lineItem.price * Double(lineItem.quantity)))
                         .font(.caption)
-                        .foregroundColor(.white)
+                        .foregroundColor(themeManager.primaryTextColor)
                     
                     // Show sale info if applicable (placeholder for now)
                     if lineItem.itemCode == "381" { // UBER FY24 items from your data
                         Text("🟢 On Sale: $5.00")
                             .font(.caption2)
-                            .foregroundColor(.green)
+                            .foregroundColor(themeManager.successColor)
                         Text("Was: $79.99")
                             .font(.caption2)
-                            .foregroundColor(.gray)
+                            .foregroundColor(themeManager.secondaryTextColor)
                             .strikethrough()
                     }
                 }
@@ -552,10 +593,10 @@ struct LineItemDetailRow: View {
             }
             .padding(.horizontal)
             .padding(.vertical, 8)
-            .background(Color(red: 0.1, green: 0.1, blue: 0.1))
+            .background(themeManager.listRowBackgroundColor)
             
             Divider()
-                .background(Color.gray.opacity(0.3))
+                .background(themeManager.secondaryTextColor.opacity(0.3))
         }
     }
     
@@ -570,4 +611,5 @@ struct LineItemDetailRow: View {
     ReceiptListView()
         .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
         .environmentObject(ReceiptStore())
+        .environmentObject(ThemeManager())
 } 

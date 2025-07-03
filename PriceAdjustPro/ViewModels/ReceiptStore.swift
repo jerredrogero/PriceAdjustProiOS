@@ -99,7 +99,7 @@ class ReceiptStore: ObservableObject {
         loadReceipts()
         
         // Send receipt processing completion notification
-        if receiptData.receiptNumber != nil {
+        if !receiptData.receiptNumber.isEmpty {
             // NotificationManager.shared.sendReceiptProcessingComplete(
             //     receiptNumber: receiptData.receiptNumber,
             //     itemCount: receiptData.lineItems.count
@@ -204,70 +204,117 @@ class ReceiptStore: ObservableObject {
     func deleteReceipt(_ receipt: Receipt) {
         guard let receiptNumber = receipt.receiptNumber else {
             errorMessage = "Cannot delete receipt: No receipt number found"
+            AppLogger.logWarning("Attempted to delete receipt without receipt number", context: "ReceiptStore")
             return
         }
         
         isLoading = true
         errorMessage = nil
         
+        AppLogger.logDataOperation("Starting receipt deletion: \(receiptNumber)", success: true)
+        
         Task {
             do {
                 // First delete from server
+                AppLogger.logDataOperation("Attempting server deletion for receipt: \(receiptNumber)", success: true)
                 try await APIService.shared.deleteReceipt(id: receiptNumber)
+                AppLogger.logDataOperation("Server deletion successful for receipt: \(receiptNumber)", success: true)
                 
                 // Then delete locally
                 await MainActor.run {
                     guard let context = viewContext else { 
                         isLoading = false
                         errorMessage = "Local storage not available"
+                        AppLogger.logError(NSError(domain: "ReceiptStore", code: 1, userInfo: [NSLocalizedDescriptionKey: "Local storage not available"]), context: "Delete receipt")
                         return 
                     }
                     
+                    AppLogger.logDataOperation("Starting local deletion for receipt: \(receiptNumber)", success: true)
                     context.delete(receipt)
                     saveContext()
                     loadReceipts()
                     isLoading = false
+                    AppLogger.logDataOperation("Receipt deletion completed successfully: \(receiptNumber)", success: true)
                 }
             } catch {
                 await MainActor.run {
                     isLoading = false
-                    errorMessage = "Failed to delete receipt: \(error.localizedDescription)"
+                    let errorMsg = "Failed to delete receipt \(receiptNumber): \(error.localizedDescription)"
+                    errorMessage = errorMsg
+                    AppLogger.logError(error, context: "Delete receipt from server")
+                    
+                    // Log the specific error details for debugging
+                    if let apiError = error as? APIService.APIError {
+                        AppLogger.logWarning("API Error details: \(apiError)", context: "Receipt deletion")
+                    }
                 }
             }
         }
     }
     
     func deleteReceipts(at offsets: IndexSet) {
-        guard let context = viewContext else { return }
+        guard let context = viewContext else { 
+            AppLogger.logError(NSError(domain: "ReceiptStore", code: 1, userInfo: [NSLocalizedDescriptionKey: "ViewContext not available"]), context: "Batch delete receipts")
+            return 
+        }
         
         isLoading = true
         errorMessage = nil
         
         let receiptsToDelete = offsets.map { receipts[$0] }
+        let receiptNumbers = receiptsToDelete.compactMap { $0.receiptNumber }
+        
+        AppLogger.logDataOperation("Starting batch deletion of \(receiptsToDelete.count) receipts: \(receiptNumbers)", success: true)
         
         Task {
-            do {
-                // Delete each receipt from server first
+            // Collect deletion errors in a thread-safe way
+            let deletionResults = await withTaskGroup(of: (String?, String).self) { group in
+                var results: [(String?, String)] = []
+                
                 for receipt in receiptsToDelete {
                     guard let receiptNumber = receipt.receiptNumber else {
-                        continue // Skip receipts without numbers
+                        AppLogger.logWarning("Skipping receipt without number in batch delete", context: "ReceiptStore")
+                        continue
                     }
-                    try await APIService.shared.deleteReceipt(id: receiptNumber)
+                    
+                    group.addTask {
+                        do {
+                            AppLogger.logDataOperation("Attempting server deletion for receipt: \(receiptNumber)", success: true)
+                            try await APIService.shared.deleteReceipt(id: receiptNumber)
+                            AppLogger.logDataOperation("Server deletion successful for receipt: \(receiptNumber)", success: true)
+                            return (nil, receiptNumber) // Success
+                        } catch {
+                            let errorMsg = "Failed to delete \(receiptNumber) from server: \(error.localizedDescription)"
+                            AppLogger.logError(error, context: "Batch delete from server - receipt \(receiptNumber)")
+                            return (errorMsg, receiptNumber) // Error
+                        }
+                    }
                 }
                 
-                // Then delete all locally
-                await MainActor.run {
-                    for receipt in receiptsToDelete {
-                        context.delete(receipt)
-                    }
-                    saveContext()
-                    loadReceipts()
-                    isLoading = false
+                for await result in group {
+                    results.append(result)
                 }
-            } catch {
-                await MainActor.run {
-                    isLoading = false
-                    errorMessage = "Failed to delete receipts: \(error.localizedDescription)"
+                
+                return results
+            }
+            
+            // Process results on main actor
+            await MainActor.run {
+                let deletionErrors = deletionResults.compactMap { $0.0 }
+                
+                // Delete all locally (even if some server deletions failed)
+                for receipt in receiptsToDelete {
+                    context.delete(receipt)
+                }
+                saveContext()
+                loadReceipts()
+                isLoading = false
+                
+                if !deletionErrors.isEmpty {
+                    errorMessage = "Some receipts failed to delete from server: \(deletionErrors.joined(separator: ", "))"
+                    AppLogger.logWarning("Batch deletion completed with errors: \(deletionErrors)", context: "ReceiptStore")
+                } else {
+                    AppLogger.logDataOperation("Batch deletion completed successfully for \(receiptsToDelete.count) receipts", success: true)
                 }
             }
         }
@@ -333,6 +380,29 @@ class ReceiptStore: ObservableObject {
     private func syncServerReceipts(_ serverReceipts: [ReceiptResponse]) {
         guard let context = viewContext else { return }
         
+        // Get all local receipts
+        let localRequest: NSFetchRequest<Receipt> = Receipt.fetchRequest()
+        let localReceipts: [Receipt]
+        do {
+            localReceipts = try context.fetch(localRequest)
+        } catch {
+            AppLogger.logError(error, context: "Failed to fetch local receipts for sync")
+            return
+        }
+        
+        // Create a set of server receipt numbers for quick lookup
+        let serverReceiptNumbers = Set(serverReceipts.map { $0.transactionNumber })
+        
+        // 1. Remove local receipts that no longer exist on server
+        for localReceipt in localReceipts {
+            if let receiptNumber = localReceipt.receiptNumber,
+               !serverReceiptNumbers.contains(receiptNumber) {
+                AppLogger.logDataOperation("Removing locally deleted receipt: \(receiptNumber)", success: true)
+                context.delete(localReceipt)
+            }
+        }
+        
+        // 2. Add/update receipts from server
         for serverReceipt in serverReceipts {
             // Check if receipt already exists locally using transaction number
             let request: NSFetchRequest<Receipt> = Receipt.fetchRequest()
@@ -342,9 +412,11 @@ class ReceiptStore: ObservableObject {
                 let existingReceipts = try context.fetch(request)
                 if existingReceipts.isEmpty {
                     // Create new receipt from server data
+                    AppLogger.logDataOperation("Creating new receipt from server: \(serverReceipt.transactionNumber)", success: true)
                     createReceiptFromServerData(serverReceipt, context: context)
                 } else {
                     // Update existing receipt
+                    AppLogger.logDataOperation("Updating existing receipt from server: \(serverReceipt.transactionNumber)", success: true)
                     updateReceiptFromServerData(existingReceipts.first!, serverReceipt: serverReceipt)
                 }
             } catch {
@@ -354,6 +426,8 @@ class ReceiptStore: ObservableObject {
         
         saveContext()
         loadReceipts()
+        
+        AppLogger.logDataOperation("Receipt sync completed: \(serverReceipts.count) server receipts processed", success: true)
     }
     
     private func createReceiptFromServerData(_ serverReceipt: ReceiptResponse, context: NSManagedObjectContext) {
@@ -450,6 +524,7 @@ class ReceiptStore: ObservableObject {
         } catch APIService.APIError.uploadSuccessButNoData {
             // This is actually a success case - the upload worked but the server didn't return parseable data
             // This is common when the server returns a simple success message instead of full receipt data
+            AppLogger.logDataOperation("Upload successful but no receipt data returned", success: true)
             await MainActor.run {
                 self.isLoading = false
                 // Clear any existing error messages since this is success
@@ -462,13 +537,7 @@ class ReceiptStore: ObservableObject {
         } catch {
             await MainActor.run {
                 self.isLoading = false
-                // Only set error message for actual errors, not for upload success cases
-                if case APIService.APIError.uploadSuccessButNoData = error {
-                    // This should have been caught above, but just in case
-                    self.errorMessage = nil
-                } else {
-                    self.errorMessage = error.localizedDescription
-                }
+                self.errorMessage = error.localizedDescription
             }
             throw error
         }
@@ -603,6 +672,8 @@ class ReceiptStore: ObservableObject {
             errorMessage = "Failed to clear receipts: \(error.localizedDescription)"
         }
     }
+    
+
 }
 
 // MARK: - Receipt Extension

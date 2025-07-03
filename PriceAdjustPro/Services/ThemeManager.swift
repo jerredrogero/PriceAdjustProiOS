@@ -9,8 +9,13 @@ class ThemeManager: ObservableObject {
     }
     
     init() {
-        // Default to dark mode (since we just implemented it)
-        self.isDarkMode = UserDefaults.standard.object(forKey: "isDarkMode") as? Bool ?? true
+        // Default to system preference if not set
+        if let savedMode = UserDefaults.standard.object(forKey: "isDarkMode") as? Bool {
+            self.isDarkMode = savedMode
+        } else {
+            // Check system preference
+            self.isDarkMode = UITraitCollection.current.userInterfaceStyle == .dark
+        }
     }
     
     var colorScheme: ColorScheme {
@@ -19,22 +24,38 @@ class ThemeManager: ObservableObject {
     
     // Theme colors
     var backgroundColor: Color {
-        isDarkMode ? .black : .white
+        isDarkMode ? .black : Color(.systemBackground)
     }
     
     var cardBackgroundColor: Color {
+        isDarkMode ? Color(red: 0.15, green: 0.15, blue: 0.15) : Color(.secondarySystemBackground)
+    }
+    
+    var listRowBackgroundColor: Color {
         isDarkMode ? Color(red: 0.15, green: 0.15, blue: 0.15) : Color(.systemBackground)
     }
     
     var primaryTextColor: Color {
-        isDarkMode ? .white : .black
+        isDarkMode ? .white : Color(.label)
     }
     
     var secondaryTextColor: Color {
-        isDarkMode ? .gray : Color(.systemGray)
+        isDarkMode ? .gray : Color(.secondaryLabel)
     }
     
     var accentColor: Color {
+        Color("costcoRed") // Using the Costco red from assets
+    }
+    
+    var successColor: Color {
+        .green
+    }
+    
+    var warningColor: Color {
+        .orange
+    }
+    
+    var errorColor: Color {
         .red
     }
     
