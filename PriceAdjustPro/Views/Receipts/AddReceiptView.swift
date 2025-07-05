@@ -144,7 +144,7 @@ struct AddReceiptView: View {
                     icon: "photo.on.rectangle",
                     title: "Choose from Photos",
                     description: "Select from photo library",
-                    color: .blue
+                    color: .costcoRed
                 )
             }
             .buttonStyle(PlainButtonStyle())

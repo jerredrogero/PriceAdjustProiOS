@@ -31,30 +31,15 @@ struct ReceiptListView: View {
                     HStack {
                     // Sort Picker
                     Menu {
-                        Button("Date (Newest)") {
-                            selectedSortOption = .dateNewest
-                            sortReceipts()
-                        }
-                        Button("Date (Oldest)") {
-                            selectedSortOption = .dateOldest
-                            sortReceipts()
-                        }
-                        Button("Total (Highest)") {
-                            selectedSortOption = .totalHighest
-                            sortReceipts()
-                        }
-                        Button("Total (Lowest)") {
-                            selectedSortOption = .totalLowest
-                            sortReceipts()
-                        }
-                        Button("Store Name") {
-                            selectedSortOption = .storeName
-                            sortReceipts()
-                        }
-                                            } label: {
-                            Label("Sort", systemImage: "arrow.up.arrow.down")
-                                .foregroundColor(themeManager.accentColor)
-                        }
+                        sortButton("Date (Newest)", .dateNewest)
+                        sortButton("Date (Oldest)", .dateOldest)
+                        sortButton("Total (Highest)", .totalHighest)
+                        sortButton("Total (Lowest)", .totalLowest)
+                        sortButton("Store Name", .storeName)
+                    } label: {
+                        Label("Sort", systemImage: "arrow.up.arrow.down")
+                            .foregroundColor(themeManager.accentColor)
+                    }
                     
                     Spacer()
                     
@@ -173,6 +158,14 @@ struct ReceiptListView: View {
         // The sorting is handled by the computed property
         // This function can be used to trigger any additional side effects if needed
         // For now, it just needs to exist for the Menu buttons
+    }
+    
+    @ViewBuilder
+    private func sortButton(_ title: String, _ option: SortOption) -> some View {
+        Button(title) {
+            selectedSortOption = option
+            sortReceipts()
+        }
     }
 }
 
@@ -551,6 +544,7 @@ struct LineItemDetailRow: View {
     let lineItem: LineItem
     
     var body: some View {
+        let backgroundColor = themeManager.listRowBackgroundColor
         VStack(spacing: 0) {
             HStack {
                 Text(lineItem.itemCode ?? "")
@@ -593,7 +587,7 @@ struct LineItemDetailRow: View {
             }
             .padding(.horizontal)
             .padding(.vertical, 8)
-            .background(themeManager.listRowBackgroundColor)
+            .background(backgroundColor)
             
             Divider()
                 .background(themeManager.secondaryTextColor.opacity(0.3))

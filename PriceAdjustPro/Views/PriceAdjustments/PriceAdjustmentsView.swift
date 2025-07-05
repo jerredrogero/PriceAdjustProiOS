@@ -159,7 +159,7 @@ struct PriceAdjustmentCard: View {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Image(systemName: "location")
-                        .foregroundColor(.blue)
+                        .foregroundColor(.costcoRed)
                     Text(adjustment.storeLocation)
                         .font(.subheadline)
                         .foregroundColor(themeManager.primaryTextColor)
@@ -208,7 +208,7 @@ struct PriceAdjustmentCard: View {
                 Text(adjustment.actionRequired)
                     .font(.subheadline)
                     .fontWeight(.medium)
-                    .foregroundColor(.blue)
+                    .foregroundColor(.costcoRed)
                     .padding(.top, 4)
             }
         }

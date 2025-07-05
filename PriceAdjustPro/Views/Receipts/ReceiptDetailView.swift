@@ -119,7 +119,7 @@ struct ReceiptHeaderCard: View {
             HStack {
                 Image(systemName: "building.2.fill")
                     .font(.title2)
-                    .foregroundColor(.costcoBlue)
+                    .foregroundColor(.costcoRed)
                 
                 VStack(alignment: .leading, spacing: 5) {
                     Text(receipt.storeName ?? "Unknown Store")
@@ -379,7 +379,7 @@ struct ActionButtonsSection: View {
                     Label("Edit", systemImage: "pencil")
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.costcoBlue)
+                        .background(Color.costcoRed)
                         .foregroundColor(.white)
                         .cornerRadius(10)
                 }

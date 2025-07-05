@@ -122,7 +122,7 @@ struct NotificationSettingsView: View {
                             }) {
                                 HStack {
                                     Image(systemName: "sparkles")
-                                        .foregroundColor(.blue)
+                                        .foregroundColor(.costcoRed)
                                         .frame(width: 24)
                                     
                                     Text("Send Demo Sale Alerts")
@@ -210,7 +210,7 @@ struct NotificationSettingsView: View {
         case .notDetermined:
             return .orange
         case .ephemeral:
-            return .blue
+            return .costcoRed
         @unknown default:
             return .gray
         }

@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="22155" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeArea="YES" colorMatched="YES" initialViewController="01J-lp-oVM">
+    <device id="retina6_12" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="22131"/>
+        <capability name="Named colors" minToolsVersion="9.0"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <scenes>
+        <!--View Controller-->
+        <scene sceneID="EHf-IW-A2E">
+            <objects>
+                <viewController id="01J-lp-oVM" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="Ze5-6b-2t3">
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <!-- Background Gradient View -->
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="gradient-background">
+                                <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                                <color key="backgroundColor" name="costcoRed"/>
+                            </view>
+                            
+                            <!-- Center Content Container -->
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="content-container">
+                                <rect key="frame" x="50" y="326" width="293" height="200"/>
+                                <subviews>
+                                    <!-- App Icon -->
+                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="AppIcon" translatesAutoresizingMaskIntoConstraints="NO" id="app-icon">
+                                        <rect key="frame" x="121.66666666666669" y="0.0" width="50" height="50"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" constant="80" id="icon-width"/>
+                                            <constraint firstAttribute="height" constant="80" id="icon-height"/>
+                                        </constraints>
+                                    </imageView>
+                                    
+                                    <!-- App Name -->
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="PriceAdjustPro" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="app-name">
+                                        <rect key="frame" x="0.0" y="100" width="293" height="40"/>
+                                        <fontDescription key="fontDescription" type="system" weight="bold" pointSize="28"/>
+                                        <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
+                                    
+                                    <!-- Tagline -->
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Automate your refund rights" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="tagline">
+                                        <rect key="frame" x="0.0" y="150" width="293" height="20"/>
+                                        <fontDescription key="fontDescription" type="system" weight="medium" pointSize="16"/>
+                                        <color key="textColor" white="0.95" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
+                                </subviews>
+                                <constraints>
+                                    <!-- App Icon Constraints -->
+                                    <constraint firstItem="app-icon" firstAttribute="centerX" secondItem="content-container" secondAttribute="centerX" id="icon-center-x"/>
+                                    <constraint firstItem="app-icon" firstAttribute="top" secondItem="content-container" secondAttribute="top" id="icon-top"/>
+                                    
+                                    <!-- App Name Constraints -->
+                                    <constraint firstItem="app-name" firstAttribute="top" secondItem="app-icon" secondAttribute="bottom" constant="20" id="name-top"/>
+                                    <constraint firstItem="app-name" firstAttribute="leading" secondItem="content-container" secondAttribute="leading" id="name-leading"/>
+                                    <constraint firstItem="app-name" firstAttribute="trailing" secondItem="content-container" secondAttribute="trailing" id="name-trailing"/>
+                                    <constraint firstItem="app-name" firstAttribute="height" constant="40" id="name-height"/>
+                                    
+                                    <!-- Tagline Constraints -->
+                                    <constraint firstItem="tagline" firstAttribute="top" secondItem="app-name" secondAttribute="bottom" constant="10" id="tagline-top"/>
+                                    <constraint firstItem="tagline" firstAttribute="leading" secondItem="content-container" secondAttribute="leading" id="tagline-leading"/>
+                                    <constraint firstItem="tagline" firstAttribute="trailing" secondItem="content-container" secondAttribute="trailing" id="tagline-trailing"/>
+                                    <constraint firstItem="tagline" firstAttribute="height" constant="20" id="tagline-height"/>
+                                    <constraint firstItem="tagline" firstAttribute="bottom" secondItem="content-container" secondAttribute="bottom" id="tagline-bottom"/>
+                                </constraints>
+                            </view>
+                            
+                            <!-- Bottom Branding -->
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Built for Costco Members" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="bottom-text">
+                                <rect key="frame" x="50" y="750" width="293" height="16"/>
+                                <fontDescription key="fontDescription" type="system" weight="medium" pointSize="13"/>
+                                <color key="textColor" white="0.8" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                        </subviews>
+                        <viewLayoutMargins key="layoutMargins" top="8" left="8" bottom="8" right="8"/>
+                        <color key="backgroundColor" name="costcoRed"/>
+                        <constraints>
+                            <!-- Background Constraints -->
+                            <constraint firstItem="gradient-background" firstAttribute="top" secondItem="Ze5-6b-2t3" secondAttribute="top" id="background-top"/>
+                            <constraint firstItem="gradient-background" firstAttribute="leading" secondItem="Ze5-6b-2t3" secondAttribute="leading" id="background-leading"/>
+                            <constraint firstItem="gradient-background" firstAttribute="trailing" secondItem="Ze5-6b-2t3" secondAttribute="trailing" id="background-trailing"/>
+                            <constraint firstItem="gradient-background" firstAttribute="bottom" secondItem="Ze5-6b-2t3" secondAttribute="bottom" id="background-bottom"/>
+                            
+                            <!-- Content Container Constraints -->
+                            <constraint firstItem="content-container" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="content-center-x"/>
+                            <constraint firstItem="content-container" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" id="content-center-y"/>
+                            <constraint firstItem="content-container" firstAttribute="leading" secondItem="Ze5-6b-2t3" secondAttribute="leading" constant="50" id="content-leading"/>
+                            <constraint firstItem="content-container" firstAttribute="trailing" secondItem="Ze5-6b-2t3" secondAttribute="trailing" constant="-50" id="content-trailing"/>
+                            
+                            <!-- Bottom Text Constraints -->
+                            <constraint firstItem="bottom-text" firstAttribute="leading" secondItem="Ze5-6b-2t3" secondAttribute="leading" constant="50" id="bottom-leading"/>
+                            <constraint firstItem="bottom-text" firstAttribute="trailing" secondItem="Ze5-6b-2t3" secondAttribute="trailing" constant="-50" id="bottom-trailing"/>
+                            <constraint firstItem="bottom-text" firstAttribute="bottom" secondItem="Ze5-6b-2t3" secondAttribute="bottom" constant="-80" id="bottom-bottom"/>
+                        </constraints>
+                    </view>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="iYjGf-fV-aR" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="53" y="375"/>
+        </scene>
+    </scenes>
+    <resources>
+        <image name="AppIcon" width="1024" height="1024"/>
+        <namedColor name="costcoRed">
+            <color red="0.800" green="0.000" blue="0.000" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </namedColor>
+    </resources>
+</document> 

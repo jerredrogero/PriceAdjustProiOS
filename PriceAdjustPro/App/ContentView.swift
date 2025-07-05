@@ -1,13 +1,14 @@
 import SwiftUI
-
-extension NSNotification.Name {
-    static let navigateToOnSale = NSNotification.Name("navigateToOnSale")
-    static let navigateToReceipts = NSNotification.Name("navigateToReceipts") 
-    static let navigateToReceipt = NSNotification.Name("navigateToReceipt")
-}
 import CoreData
-// import KeychainAccess
+import KeychainAccess
 import Combine
+
+// MARK: - Temporary notification names (until NotificationManager is added to build target)
+extension Notification.Name {
+    static let navigateToOnSale = Notification.Name("navigateToOnSale")
+    static let navigateToReceipts = Notification.Name("navigateToReceipts")
+    static let navigateToReceipt = Notification.Name("navigateToReceipt")
+}
 
 struct ContentView: View {
     @EnvironmentObject var authService: AuthenticationService
@@ -88,6 +89,9 @@ struct MainTabView: View {
                         Text("Dashboard")
                     }
                     .tag(0)
+                    .accessibilityLabel("Dashboard")
+                    .accessibilityHint("View analytics and recent activity")
+                    .accessibilityIdentifier("dashboard-tab")
                 
                 // Receipts - view all receipts
                 ReceiptListView()
@@ -96,6 +100,9 @@ struct MainTabView: View {
                         Text("Receipts")
                     }
                     .tag(1)
+                    .accessibilityLabel("Receipts")
+                    .accessibilityHint("View all your receipts")
+                    .accessibilityIdentifier("receipts-tab")
                 
                 // Upload - add new receipts
                 AddReceiptView()
@@ -104,6 +111,9 @@ struct MainTabView: View {
                         Text("Upload")
                     }
                     .tag(2)
+                    .accessibilityLabel("Upload Receipt")
+                    .accessibilityHint("Add a new receipt")
+                    .accessibilityIdentifier("upload-tab")
                 
                 // Price Adjustments - THE MAIN FEATURE
                 PriceAdjustmentsView()
@@ -112,6 +122,9 @@ struct MainTabView: View {
                         Text("Adjustments")
                     }
                     .tag(3)
+                    .accessibilityLabel("Price Adjustments")
+                    .accessibilityHint("View available price adjustments")
+                    .accessibilityIdentifier("adjustments-tab")
                 
                 // On Sale - current Costco promotions
                 OnSaleView()
@@ -120,6 +133,9 @@ struct MainTabView: View {
                         Text("On Sale")
                     }
                     .tag(4)
+                    .accessibilityLabel("On Sale Items")
+                    .accessibilityHint("View current Costco promotions")
+                    .accessibilityIdentifier("on-sale-tab")
             }
             .accentColor(themeManager.accentColor)
         }

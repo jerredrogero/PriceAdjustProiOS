@@ -387,7 +387,7 @@ struct PromotionsSummaryCard: View {
         case "instant_rebate":
             return .green
         case "coupon":
-            return .blue
+            return .costcoRed
         case "manufacturer_rebate":
             return .purple
         case "sale":

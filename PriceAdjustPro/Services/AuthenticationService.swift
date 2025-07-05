@@ -2,7 +2,7 @@ import Foundation
 import SwiftUI
 import Combine
 import LocalAuthentication
-// import KeychainAccess
+import KeychainAccess
 
 class AuthenticationService: ObservableObject {
     static let shared = AuthenticationService()
@@ -12,17 +12,16 @@ class AuthenticationService: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     
-    // private let keychain = Keychain(service: "com.priceadjustpro.ios")
-    // TODO: Replace with proper Keychain when package is working
+    private let keychain = Keychain(service: "com.priceadjustpro.ios")
     private let userDefaults = UserDefaults.standard
     private var cancellables = Set<AnyCancellable>()
     
     var accessToken: String? {
-        return userDefaults.string(forKey: "access_token")
+        return keychain["access_token"]
     }
     
     private var refreshToken: String? {
-        return userDefaults.string(forKey: "refresh_token")
+        return keychain["refresh_token"]
     }
     
     init() {
@@ -79,8 +78,8 @@ class AuthenticationService: ObservableObject {
     
     func logout() {
         // Clear tokens from storage
-        userDefaults.removeObject(forKey: "access_token")
-        userDefaults.removeObject(forKey: "refresh_token")
+        try? keychain.remove("access_token")
+        try? keychain.remove("refresh_token")
         
         // Clear biometric credentials on logout
         let biometricService = BiometricAuthService.shared
@@ -133,10 +132,10 @@ class AuthenticationService: ObservableObject {
         
         // Store tokens in keychain if available (for JWT-based auth)
         if let accessToken = response.accessToken {
-            userDefaults.set(accessToken, forKey: "access_token")
+            keychain["access_token"] = accessToken
         }
         if let refreshToken = response.refresh {
-            userDefaults.set(refreshToken, forKey: "refresh_token")
+            keychain["refresh_token"] = refreshToken
         }
         
         // Store credentials for biometric auth if provided and biometric is available
@@ -268,22 +267,22 @@ class AuthenticationService: ObservableObject {
     }
 }
 
-// MARK: - Keychain Extension (Commented out until package is working)
+// MARK: - Keychain Extension
 
-// extension Keychain {
-//     subscript(key: String) -> String? {
-//         get {
-//             return try? get(key)
-//         }
-//         set {
-//             if let value = newValue {
-//                 try? set(value, key: key)
-//             } else {
-//                 try? remove(key)
-//             }
-//         }
-//     }
-// }
+extension Keychain {
+    subscript(key: String) -> String? {
+        get {
+            return try? get(key)
+        }
+        set {
+            if let value = newValue {
+                try? set(value, key: key)
+            } else {
+                try? remove(key)
+            }
+        }
+    }
+}
 
 // MARK: - Note: Using separate BiometricAuthService.swift file
 

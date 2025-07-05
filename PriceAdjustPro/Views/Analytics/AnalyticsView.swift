@@ -239,7 +239,7 @@ struct AnalyticsView: View {
                      QuickActionCard(
                          title: "Price Adjustments",
                          icon: "dollarsign.circle.fill",
-                         color: .blue,
+                         color: .costcoRed,
                          action: { navigateToAdjustments = true }
                      )
                  }
@@ -289,7 +289,7 @@ struct AnalyticsView: View {
                     title: "Total Spent",
                     value: String(format: "$%.2f", totalSpent),
                     icon: "dollarsign.circle.fill",
-                    gradient: [.blue, .blue.opacity(0.7)],
+                    gradient: [.costcoRed, .costcoRed.opacity(0.7)],
                     subtitle: weeklyTrend
                 )
                 
@@ -343,7 +343,7 @@ struct AnalyticsView: View {
                             title: "Most Shopped Store",
                             value: topStore.key,
                             subtitle: "\(topStore.value.count) visits • $\(String(format: "%.0f", topStore.value.total))",
-                            color: .blue
+                            color: .costcoRed
                         )
                     }
                     
@@ -619,7 +619,7 @@ struct ModernCategoryCard: View {
                     .overlay(
                         HStack {
                             RoundedRectangle(cornerRadius: 2)
-                                .fill(Color.blue)
+                                .fill(Color.costcoRed)
                                 .frame(width: geometry.size.width * (percentage / 100))
                             Spacer(minLength: 0)
                         }
@@ -643,9 +643,9 @@ struct ModernActivityRow: View {
             // Store icon
             Image(systemName: "building.2.fill")
                 .font(.title3)
-                .foregroundColor(.blue)
+                .foregroundColor(.costcoRed)
                 .frame(width: 40, height: 40)
-                .background(Color.blue.opacity(0.1))
+                .background(Color.costcoRed.opacity(0.1))
                 .cornerRadius(10)
             
             VStack(alignment: .leading, spacing: 4) {

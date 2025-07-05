@@ -106,7 +106,7 @@ struct DeveloperTestingView: View {
                             TestButton(
                                 title: "Sale Alert",
                                 icon: "tag.fill",
-                                color: .blue
+                                color: .costcoRed
                             ) {
                                 sendSaleTestNotification()
                             }

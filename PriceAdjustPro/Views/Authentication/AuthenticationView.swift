@@ -95,6 +95,8 @@ struct AuthenticationView: View {
                     .scaledToFit()
                     .frame(height: 80)
                     .shadow(radius: 10)
+                    .accessibilityLabel("Costco Logo")
+                    .accessibilityIdentifier("costco-logo")
                 
                 // App Title with Animation
                 VStack(spacing: 8) {
@@ -108,11 +110,15 @@ struct AuthenticationView: View {
                             )
                         )
                         .shadow(radius: 2)
+                        .accessibilityAddTraits(.isHeader)
+                        .accessibilityIdentifier("app-title")
                     
                     Text("Automate your refund rights")
                         .font(.subheadline)
                         .foregroundColor(.white.opacity(0.9))
                         .fontWeight(.medium)
+                        .accessibilityLabel("App tagline: Automate your refund rights")
+                        .accessibilityIdentifier("app-tagline")
                 }
             }
             
@@ -122,6 +128,8 @@ struct AuthenticationView: View {
                 .fontWeight(.semibold)
                 .foregroundColor(.white)
                 .opacity(isKeyboardVisible ? 0 : 1)
+                .accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier(isRegistering ? "create-account-header" : "welcome-back-header")
         }
         .animation(.easeInOut(duration: 0.3), value: isKeyboardVisible)
         .animation(.easeInOut(duration: 0.5), value: isRegistering)
@@ -304,18 +312,23 @@ struct ModernTextField: View {
                 .fontWeight(.medium)
                 .foregroundColor(themeManager.secondaryTextColor)
                 .opacity(isFocused || !text.isEmpty ? 1 : 0.7)
+                .accessibilityHidden(true) // Hide label since TextField will include it
             
             HStack(spacing: 12) {
                 Image(systemName: icon)
                     .foregroundColor(isFocused ? themeManager.accentColor : themeManager.secondaryTextColor)
                     .frame(width: 20)
                     .animation(.easeInOut(duration: 0.2), value: isFocused)
+                    .accessibilityHidden(true) // Decorative icon
                 
                 TextField(placeholder, text: $text)
                     .foregroundColor(themeManager.primaryTextColor)
                     .keyboardType(keyboardType)
                     .autocapitalization(keyboardType == .emailAddress ? .none : .words)
                     .focused($isFocused)
+                    .accessibilityLabel(title)
+                    .accessibilityHint(placeholder)
+                    .accessibilityIdentifier(title.lowercased().replacingOccurrences(of: " ", with: "-"))
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
@@ -350,12 +363,14 @@ struct ModernPasswordField: View {
                 .fontWeight(.medium)
                 .foregroundColor(themeManager.secondaryTextColor)
                 .opacity(isFocused || !text.isEmpty ? 1 : 0.7)
+                .accessibilityHidden(true) // Hide label since TextField will include it
             
             HStack(spacing: 12) {
                 Image(systemName: "lock")
                     .foregroundColor(isFocused ? themeManager.accentColor : themeManager.secondaryTextColor)
                     .frame(width: 20)
                     .animation(.easeInOut(duration: 0.2), value: isFocused)
+                    .accessibilityHidden(true) // Decorative icon
                 
                 Group {
                     if showPassword {
@@ -366,6 +381,9 @@ struct ModernPasswordField: View {
                 }
                 .foregroundColor(themeManager.primaryTextColor)
                 .focused($isFocused)
+                .accessibilityLabel(title)
+                .accessibilityHint(placeholder)
+                .accessibilityIdentifier("password-field")
                 
                 Button(action: { showPassword.toggle() }) {
                     Image(systemName: showPassword ? "eye.slash" : "eye")
@@ -373,6 +391,9 @@ struct ModernPasswordField: View {
                         .frame(width: 20)
                 }
                 .buttonStyle(PlainButtonStyle())
+                .accessibilityLabel(showPassword ? "Hide password" : "Show password")
+                .accessibilityHint("Toggles password visibility")
+                .accessibilityIdentifier("password-visibility-toggle")
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
@@ -400,6 +421,7 @@ struct ErrorMessageView: View {
         HStack(spacing: 12) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundColor(themeManager.errorColor)
+                .accessibilityHidden(true) // Decorative icon
             
             Text(message)
                 .font(.subheadline)
@@ -418,6 +440,9 @@ struct ErrorMessageView: View {
                         .stroke(themeManager.errorColor.opacity(0.3), lineWidth: 1)
                 )
         )
+        .accessibilityLabel("Error: \(message)")
+        .accessibilityAddTraits(.isStaticText)
+        .accessibilityIdentifier("error-message")
     }
 }
 
@@ -435,9 +460,11 @@ struct PrimaryActionButton: View {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                         .scaleEffect(0.8)
+                        .accessibilityLabel("Loading")
                 } else {
                     Image(systemName: "arrow.right.circle.fill")
                         .font(.title3)
+                        .accessibilityHidden(true) // Decorative icon
                 }
                 
                 Text(isLoading ? "Processing..." : title)
@@ -465,6 +492,11 @@ struct PrimaryActionButton: View {
         .scaleEffect(isLoading ? 0.98 : 1.0)
         .animation(.easeInOut(duration: 0.2), value: isLoading)
         .animation(.easeInOut(duration: 0.2), value: isEnabled)
+        .accessibilityLabel(isLoading ? "Processing" : title)
+        .accessibilityHint(isLoading ? "Please wait" : "Tap to \(title.lowercased())")
+        .accessibilityIdentifier(title.lowercased().replacingOccurrences(of: " ", with: "-") + "-button")
+        .accessibilityAddTraits(.isButton)
+        .accessibilityRemoveTraits(isEnabled ? [] : .isButton)
     }
 }
 
@@ -479,6 +511,7 @@ struct BiometricAuthButton: View {
             HStack {
                 Image(systemName: iconName)
                     .font(.title3)
+                    .accessibilityHidden(true) // Decorative icon
                 
                 Text("Sign in with \(biometricType)")
                     .fontWeight(.medium)
@@ -495,6 +528,10 @@ struct BiometricAuthButton: View {
                     )
             )
         }
+        .accessibilityLabel("Sign in with \(biometricType)")
+        .accessibilityHint("Uses biometric authentication to sign in")
+        .accessibilityIdentifier("biometric-auth-button")
+        .accessibilityAddTraits(.isButton)
     }
 }
 
@@ -519,6 +556,10 @@ struct ToggleAuthModeButton: View {
             .font(.subheadline)
         }
         .padding(.top, 8)
+        .accessibilityLabel(isRegistering ? "Already have an account? Sign In" : "Don't have an account? Sign Up")
+        .accessibilityHint(isRegistering ? "Switches to sign in mode" : "Switches to sign up mode")
+        .accessibilityIdentifier("toggle-auth-mode-button")
+        .accessibilityAddTraits(.isButton)
     }
 }
 
