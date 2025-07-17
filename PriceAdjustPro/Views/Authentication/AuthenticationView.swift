@@ -30,17 +30,9 @@ struct AuthenticationView: View {
         NavigationView {
             GeometryReader { geometry in
                 ZStack {
-                    // Background Gradient
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color.costcoRed,
-                            Color.costcoRed.opacity(0.8),
-                            themeManager.backgroundColor
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                    .ignoresSafeArea()
+                    // Background - solid red (same in light and dark mode)
+                    Color(red: 0.89, green: 0.09, blue: 0.22)
+                        .ignoresSafeArea()
                     
                     ScrollView {
                         VStack(spacing: 0) {
@@ -113,11 +105,11 @@ struct AuthenticationView: View {
                         .accessibilityAddTraits(.isHeader)
                         .accessibilityIdentifier("app-title")
                     
-                    Text("Automate your refund rights")
+                    Text("AI Powered Receipt Tracking")
                         .font(.subheadline)
                         .foregroundColor(.white.opacity(0.9))
                         .fontWeight(.medium)
-                        .accessibilityLabel("App tagline: Automate your refund rights")
+                        .accessibilityLabel("App tagline: AI Powered Receipt Tracking")
                         .accessibilityIdentifier("app-tagline")
                 }
             }
@@ -222,11 +214,8 @@ struct AuthenticationView: View {
                             }
                             
                             // Debug logging
-                            print("📝 Registration attempt with:")
-                            print("   Email: '\(email)'")
-                            print("   Password: [length: \(password.count)]")
-                            print("   First Name: '\(firstName)'")
-                            print("   Last Name: '\(lastName)'")
+                            AppLogger.user("Registration attempt initiated")
+                            AppLogger.logSecurityEvent("Registration form validation passed")
                             
                             authService.register(
                                 email: email.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -274,8 +263,8 @@ struct AuthenticationView: View {
         .padding(24)
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(.ultraThinMaterial)
-                .shadow(radius: 20)
+                .fill(Color.white.opacity(0.95))
+                .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
         )
         .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isRegistering)
     }
@@ -310,21 +299,22 @@ struct ModernTextField: View {
             Text(title)
                 .font(.caption)
                 .fontWeight(.medium)
-                .foregroundColor(themeManager.secondaryTextColor)
+                .foregroundColor(.gray)
                 .opacity(isFocused || !text.isEmpty ? 1 : 0.7)
                 .accessibilityHidden(true) // Hide label since TextField will include it
             
             HStack(spacing: 12) {
                 Image(systemName: icon)
-                    .foregroundColor(isFocused ? themeManager.accentColor : themeManager.secondaryTextColor)
+                    .foregroundColor(isFocused ? .red : .gray)
                     .frame(width: 20)
                     .animation(.easeInOut(duration: 0.2), value: isFocused)
                     .accessibilityHidden(true) // Decorative icon
                 
                 TextField(placeholder, text: $text)
-                    .foregroundColor(themeManager.primaryTextColor)
+                    .foregroundColor(.black)
                     .keyboardType(keyboardType)
                     .autocapitalization(keyboardType == .emailAddress ? .none : .words)
+                    .accentColor(.red)
                     .focused($isFocused)
                     .accessibilityLabel(title)
                     .accessibilityHint(placeholder)
@@ -334,11 +324,11 @@ struct ModernTextField: View {
             .padding(.vertical, 14)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(themeManager.cardBackgroundColor.opacity(0.8))
+                    .fill(Color.gray.opacity(0.1))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(
-                                isFocused ? themeManager.accentColor : themeManager.secondaryTextColor.opacity(0.3),
+                                isFocused ? .red : Color.gray.opacity(0.3),
                                 lineWidth: isFocused ? 2 : 1
                             )
                     )
@@ -361,13 +351,13 @@ struct ModernPasswordField: View {
             Text(title)
                 .font(.caption)
                 .fontWeight(.medium)
-                .foregroundColor(themeManager.secondaryTextColor)
+                .foregroundColor(.gray)
                 .opacity(isFocused || !text.isEmpty ? 1 : 0.7)
                 .accessibilityHidden(true) // Hide label since TextField will include it
             
             HStack(spacing: 12) {
                 Image(systemName: "lock")
-                    .foregroundColor(isFocused ? themeManager.accentColor : themeManager.secondaryTextColor)
+                    .foregroundColor(isFocused ? .red : .gray)
                     .frame(width: 20)
                     .animation(.easeInOut(duration: 0.2), value: isFocused)
                     .accessibilityHidden(true) // Decorative icon
@@ -379,7 +369,8 @@ struct ModernPasswordField: View {
                         SecureField(placeholder, text: $text)
                     }
                 }
-                .foregroundColor(themeManager.primaryTextColor)
+                .foregroundColor(.black)
+                .accentColor(.red)
                 .focused($isFocused)
                 .accessibilityLabel(title)
                 .accessibilityHint(placeholder)
@@ -387,7 +378,7 @@ struct ModernPasswordField: View {
                 
                 Button(action: { showPassword.toggle() }) {
                     Image(systemName: showPassword ? "eye.slash" : "eye")
-                        .foregroundColor(themeManager.secondaryTextColor)
+                        .foregroundColor(.gray)
                         .frame(width: 20)
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -399,11 +390,11 @@ struct ModernPasswordField: View {
             .padding(.vertical, 14)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(themeManager.cardBackgroundColor.opacity(0.8))
+                    .fill(Color.gray.opacity(0.1))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(
-                                isFocused ? themeManager.accentColor : themeManager.secondaryTextColor.opacity(0.3),
+                                isFocused ? .red : Color.gray.opacity(0.3),
                                 lineWidth: isFocused ? 2 : 1
                             )
                     )
@@ -420,12 +411,12 @@ struct ErrorMessageView: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundColor(themeManager.errorColor)
+                .foregroundColor(.red)
                 .accessibilityHidden(true) // Decorative icon
             
             Text(message)
                 .font(.subheadline)
-                .foregroundColor(themeManager.errorColor)
+                .foregroundColor(.red)
                 .multilineTextAlignment(.leading)
             
             Spacer()
@@ -434,10 +425,10 @@ struct ErrorMessageView: View {
         .padding(.vertical, 12)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(themeManager.errorColor.opacity(0.1))
+                .fill(Color.red.opacity(0.1))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(themeManager.errorColor.opacity(0.3), lineWidth: 1)
+                        .stroke(Color.red.opacity(0.3), lineWidth: 1)
                 )
         )
         .accessibilityLabel("Error: \(message)")
@@ -477,15 +468,15 @@ struct PrimaryActionButton: View {
             .background(
                 LinearGradient(
                     gradient: Gradient(colors: [
-                        themeManager.accentColor,
-                        themeManager.accentColor.opacity(0.8)
+                        Color(red: 0.89, green: 0.09, blue: 0.22),
+                        Color(red: 0.75, green: 0.05, blue: 0.18)
                     ]),
                     startPoint: .leading,
                     endPoint: .trailing
                 )
             )
             .cornerRadius(12)
-            .shadow(color: themeManager.accentColor.opacity(0.3), radius: 8, x: 0, y: 4)
+            .shadow(color: Color(red: 0.89, green: 0.09, blue: 0.22).opacity(0.3), radius: 8, x: 0, y: 4)
         }
         .disabled(isLoading || !isEnabled)
         .opacity((isLoading || !isEnabled) ? 0.6 : 1.0)
@@ -516,15 +507,15 @@ struct BiometricAuthButton: View {
                 Text("Sign in with \(biometricType)")
                     .fontWeight(.medium)
             }
-            .foregroundColor(themeManager.primaryTextColor)
+            .foregroundColor(.black)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 14)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(.ultraThinMaterial)
+                    .fill(Color.gray.opacity(0.1))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(themeManager.secondaryTextColor.opacity(0.3), lineWidth: 1)
+                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                     )
             )
         }
@@ -547,10 +538,10 @@ struct ToggleAuthModeButton: View {
         }) {
             HStack {
                 Text(isRegistering ? "Already have an account?" : "Don't have an account?")
-                    .foregroundColor(themeManager.secondaryTextColor)
+                    .foregroundColor(.gray)
                 
                 Text(isRegistering ? "Sign In" : "Sign Up")
-                    .foregroundColor(themeManager.accentColor)
+                    .foregroundColor(.red)
                     .fontWeight(.semibold)
             }
             .font(.subheadline)

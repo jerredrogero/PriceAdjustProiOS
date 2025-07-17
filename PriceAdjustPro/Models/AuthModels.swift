@@ -6,6 +6,9 @@ struct APIUserResponse: Codable {
     let email: String
     let firstName: String?
     let lastName: String?
+    let accountType: String?
+    let receiptCount: Int?
+    let receiptLimit: Int?
     
     enum CodingKeys: String, CodingKey {
         case id
@@ -13,6 +16,48 @@ struct APIUserResponse: Codable {
         case email
         case firstName = "first_name"
         case lastName = "last_name"
+        case accountType = "account_type"
+        case receiptCount = "receipt_count"
+        case receiptLimit = "receipt_limit"
+    }
+    
+    // Computed properties for account management
+    var isPaidUser: Bool {
+        guard let accountType = accountType else { return false }
+        let lowercasedType = accountType.lowercased()
+        
+        // Check for various possible values that indicate a paid account
+        return lowercasedType == "paid" || 
+               lowercasedType == "premium" || 
+               lowercasedType == "pro" || 
+               lowercasedType == "subscription" ||
+               lowercasedType == "active" ||
+               lowercasedType == "subscriber"
+    }
+    
+    var isFreeUser: Bool {
+        guard let accountType = accountType else { return true }
+        let lowercasedType = accountType.lowercased()
+        
+        // Check for various possible values that indicate a free account
+        return lowercasedType == "free" || 
+               lowercasedType == "basic" || 
+               lowercasedType == "trial" ||
+               lowercasedType == "inactive"
+    }
+    
+    var remainingReceiptUploads: Int {
+        guard let limit = receiptLimit, let count = receiptCount else { 
+            return isFreeUser ? 5 : Int.max
+        }
+        return max(0, limit - count)
+    }
+    
+    var hasReachedReceiptLimit: Bool {
+        guard let limit = receiptLimit, let count = receiptCount else {
+            return false
+        }
+        return count >= limit
     }
 }
 

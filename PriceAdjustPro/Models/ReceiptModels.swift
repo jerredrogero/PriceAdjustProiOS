@@ -175,10 +175,10 @@ struct LocationContext: Codable {
 
 struct OnSaleResponse: Codable {
     let sales: [SaleItem]
-    let totalCount: Int
-    let activePromotions: [Promotion]
-    let currentDate: String
-    let lastUpdated: String
+    let totalCount: Int?
+    let activePromotions: [Promotion]?
+    let currentDate: String?
+    let lastUpdated: String?
     
     enum CodingKeys: String, CodingKey {
         case sales
@@ -210,6 +210,48 @@ struct SaleItem: Codable, Identifiable {
         case savings
         case saleType = "sale_type"
         case promotion
+    }
+    
+    // Manual initializer for sample data
+    init(id: Int, itemCode: String, description: String, regularPrice: Double?, salePrice: Double?, instantRebate: Double?, savings: Double?, saleType: String, promotion: Promotion) {
+        self.id = id
+        self.itemCode = itemCode
+        self.description = description
+        self.regularPrice = regularPrice
+        self.salePrice = salePrice
+        self.instantRebate = instantRebate
+        self.savings = savings
+        self.saleType = saleType
+        self.promotion = promotion
+    }
+    
+    // Custom decoder for API responses
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        id = try container.decode(Int.self, forKey: .id)
+        itemCode = try container.decode(String.self, forKey: .itemCode)
+        description = try container.decode(String.self, forKey: .description)
+        saleType = try container.decode(String.self, forKey: .saleType)
+        promotion = try container.decode(Promotion.self, forKey: .promotion)
+        
+        // Handle price fields that can be either String or Double
+        regularPrice = try container.decodeDoubleOrString(forKey: .regularPrice)
+        salePrice = try container.decodeDoubleOrString(forKey: .salePrice)
+        instantRebate = try container.decodeDoubleOrString(forKey: .instantRebate)
+        savings = try container.decodeDoubleOrString(forKey: .savings)
+    }
+}
+
+// Helper extension to decode values that can be either String or Double
+extension KeyedDecodingContainer {
+    func decodeDoubleOrString(forKey key: K) throws -> Double? {
+        if let doubleValue = try? decodeIfPresent(Double.self, forKey: key) {
+            return doubleValue
+        } else if let stringValue = try? decodeIfPresent(String.self, forKey: key) {
+            return Double(stringValue)
+        }
+        return nil
     }
 }
 

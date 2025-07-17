@@ -503,6 +503,12 @@ class ReceiptStore: ObservableObject {
     // MARK: - Upload Receipt
     
     func uploadReceiptToServer(pdfData: Data, fileName: String) async throws {
+        // Check upload limits for free users
+        let accountService = AccountService.shared
+        if !accountService.canUploadReceipts {
+            throw ReceiptUploadError.uploadLimitReached
+        }
+        
         await MainActor.run {
             isLoading = true
             errorMessage = nil
@@ -514,6 +520,9 @@ class ReceiptStore: ObservableObject {
             await MainActor.run {
                 self.isLoading = false
                 self.syncServerReceipts([serverReceipt])
+                
+                // Refresh account data to update receipt count
+                accountService.refreshAccountData()
                 
                 // Send notification for successful upload processing
                 // NotificationManager.shared.sendReceiptProcessingComplete(
@@ -529,6 +538,8 @@ class ReceiptStore: ObservableObject {
                 self.isLoading = false
                 // Clear any existing error messages since this is success
                 self.errorMessage = nil
+                // Refresh account data to update receipt count
+                accountService.refreshAccountData()
                 // Don't add any fake receipt data - just let the user know it succeeded
                 // The actual receipt will appear when we sync with the server later
             }
@@ -693,5 +704,18 @@ extension Receipt {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
         return formatter.string(from: NSNumber(value: total)) ?? "$0.00"
+    }
+} 
+
+// MARK: - Receipt Upload Errors
+
+enum ReceiptUploadError: Error, LocalizedError {
+    case uploadLimitReached
+    
+    var errorDescription: String? {
+        switch self {
+        case .uploadLimitReached:
+            return "Upload limit reached. Upgrade to Premium for unlimited uploads."
+        }
     }
 } 

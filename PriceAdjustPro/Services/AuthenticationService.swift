@@ -91,6 +91,9 @@ class AuthenticationService: ObservableObject {
         currentUser = nil
         isAuthenticated = false
         errorMessage = nil
+        
+        // Notify AccountService about logout
+        NotificationCenter.default.post(name: .userDidLogout, object: nil)
     }
     
     func refreshAccessToken() {
@@ -161,11 +164,24 @@ class AuthenticationService: ObservableObject {
         isAuthenticated = true
         errorMessage = nil
         
-        print("Login successful for user: \(user.username ?? user.email)")
-        if let token = response.accessToken {
-            print("With token: \(token.prefix(20))...")
+        // Debug: Print account type information
+        print("=== SUBSCRIPTION DEBUG ===")
+        print("User authenticated: \(user.email)")
+        print("Raw account type from API: '\(user.accountType ?? "nil")'")
+        print("Is paid user: \(user.isPaidUser)")
+        print("Is free user: \(user.isFreeUser)")
+        print("Receipt count: \(user.receiptCount ?? 0)")
+        print("Receipt limit: \(user.receiptLimit ?? 0)")
+        print("==========================")
+        
+        // Notify AccountService about authentication
+        NotificationCenter.default.post(name: .userDidAuthenticate, object: user)
+        
+        AppLogger.logSecurityEvent("Login successful for user: \(user.username ?? user.email)")
+        if response.accessToken != nil {
+            AppLogger.logSecurityEvent("Authentication token received")
         } else {
-            print("Using session-based authentication")
+            AppLogger.logSecurityEvent("Using session-based authentication")
         }
     }
     

@@ -5,6 +5,7 @@ import Combine
 struct AnalyticsView: View {
     @EnvironmentObject var receiptStore: ReceiptStore
     @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var accountService: AccountService
     @State private var selectedTimeFrame: TimeFrame = .month
     @State private var showingSettings = false
     @State private var showingUpload = false
@@ -113,74 +114,80 @@ struct AnalyticsView: View {
     
     var body: some View {
         NavigationView {
-            ZStack {
-                // Gradient background
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        themeManager.backgroundColor,
-                        themeManager.backgroundColor.opacity(0.8)
-                    ]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
-                
-                ScrollView {
-                    LazyVStack(spacing: 24) {
-                        // Header with greeting and quick stats
-                        headerSection
-                        
-                        // Quick Actions
-                        quickActionsSection
-                        
-                        // Time Frame Picker
-                        timeFrameSection
-                        
-                        // Main Analytics Cards
-                        analyticsCardsSection
-                        
-                        // Enhanced Insights
-                        insightsSection
-                        
-                        // Price Adjustment Opportunities
-                        priceAdjustmentSection
-                        
-                        // Categories and Trends
-                        categoriesSection
-                        
-                        // Recent Activity with enhanced display
-                        recentActivitySection
+            analyticsContent
+                .navigationTitle("Dashboard")
+                .navigationBarTitleDisplayMode(.large)
+                .navigationBarItems(
+                    trailing: Button(action: {
+                        showingSettings = true
+                    }) {
+                        Image(systemName: "gear")
+                            .foregroundColor(themeManager.accentColor)
+                            .font(.title2)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 10)
+                )
+                .sheet(isPresented: $showingSettings) {
+                    SettingsView()
+                        .environmentObject(themeManager)
                 }
-                .refreshable {
-                    await refreshData()
-                }
-            }
-            .navigationTitle("Dashboard")
-            .navigationBarTitleDisplayMode(.large)
-            .navigationBarItems(
-                trailing: Button(action: {
-                    showingSettings = true
-                }) {
-                    Image(systemName: "gear")
-                        .foregroundColor(themeManager.accentColor)
-                        .font(.title2)
-                }
+                // Hidden NavigationLinks for "View All" buttons
+                .background(
+                    Group {
+                        NavigationLink(destination: ReceiptListView(), isActive: $navigateToReceipts) { EmptyView() }
+                        NavigationLink(destination: PriceAdjustmentsView(), isActive: $navigateToAdjustments) { EmptyView() }
+                        NavigationLink(destination: OnSaleView(), isActive: $navigateToOnSale) { EmptyView() }
+                    }
+                )
+        }
+    }
+    
+    // MARK: - Analytics Content (For Paid Users)
+    
+    private var analyticsContent: some View {
+        ZStack {
+            // Gradient background
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    themeManager.backgroundColor,
+                    themeManager.backgroundColor.opacity(0.8)
+                ]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
             )
-            .sheet(isPresented: $showingSettings) {
-                SettingsView()
-                    .environmentObject(themeManager)
-            }
-            // Hidden NavigationLinks for "View All" buttons
-            .background(
-                Group {
-                    NavigationLink(destination: ReceiptListView(), isActive: $navigateToReceipts) { EmptyView() }
-                    NavigationLink(destination: PriceAdjustmentsView(), isActive: $navigateToAdjustments) { EmptyView() }
-                    NavigationLink(destination: OnSaleView(), isActive: $navigateToOnSale) { EmptyView() }
+            .ignoresSafeArea()
+            
+            ScrollView {
+                LazyVStack(spacing: 24) {
+                    // Header with greeting and quick stats
+                    headerSection
+                    
+                    // Quick Actions
+                    quickActionsSection
+                    
+                    // Time Frame Picker
+                    timeFrameSection
+                    
+                    // Main Analytics Cards
+                    analyticsCardsSection
+                    
+                    // Enhanced Insights
+                    insightsSection
+                    
+                    // Price Adjustment Opportunities
+                    priceAdjustmentSection
+                    
+                    // Categories and Trends
+                    categoriesSection
+                    
+                    // Recent Activity with enhanced display
+                    recentActivitySection
                 }
-            )
+                .padding(.horizontal, 20)
+                .padding(.top, 10)
+            }
+            .refreshable {
+                await refreshData()
+            }
         }
     }
     
@@ -818,10 +825,9 @@ struct EmptyActivityCard: View {
     }
 }
 
-
-
 #Preview {
     AnalyticsView()
         .environmentObject(ReceiptStore())
         .environmentObject(ThemeManager())
+        .environmentObject(AccountService.shared)
 } 

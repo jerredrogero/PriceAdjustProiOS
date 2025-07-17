@@ -14,6 +14,7 @@ struct ContentView: View {
     @EnvironmentObject var authService: AuthenticationService
     @EnvironmentObject var receiptStore: ReceiptStore
     @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var accountService: AccountService
     @State private var selectedTab = 0
     
     var body: some View {

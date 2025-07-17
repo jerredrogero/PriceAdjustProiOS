@@ -5,6 +5,7 @@ import LocalAuthentication
 struct SettingsView: View {
     @EnvironmentObject var authService: AuthenticationService
     @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var accountService: AccountService
     @StateObject private var biometricService = BiometricAuthService.shared
     @State private var showingEditProfile = false
     @State private var showingChangePassword = false
@@ -37,12 +38,107 @@ struct SettingsView: View {
                                     .font(.subheadline)
                                     .foregroundColor(themeManager.secondaryTextColor)
                                 
-                                Text("Member")
-                                    .font(.caption)
-                                    .foregroundColor(themeManager.secondaryTextColor)
+                                // Account Type Badge
+                                HStack {
+                                    Image(systemName: accountService.isPaidUser ? "crown.fill" : "person.fill")
+                                        .foregroundColor(accountService.isPaidUser ? .yellow : .gray)
+                                    
+                                    Text(accountService.accountTypeDisplayName)
+                                        .font(.caption)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(accountService.isPaidUser ? .yellow : .gray)
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(accountService.isPaidUser ? Color.yellow.opacity(0.2) : Color.gray.opacity(0.2))
+                                )
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical)
+                        }
+                    }
+                    .listRowBackground(themeManager.cardBackgroundColor)
+                    
+                    // Account Status Section
+                    Section("Account Status") {
+                        // Receipt Limits
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Image(systemName: "doc.text")
+                                    .foregroundColor(themeManager.accentColor)
+                                    .frame(width: 20)
+                                
+                                Text("Receipt Uploads")
+                                    .font(.subheadline)
+                                    .foregroundColor(themeManager.primaryTextColor)
+                                
+                                Spacer()
+                                
+                                Text(accountService.getReceiptLimitMessage())
+                                    .font(.caption)
+                                    .foregroundColor(themeManager.secondaryTextColor)
+                            }
+                            
+                            // Progress bar for free users
+                            if accountService.isFreeUser && accountService.receiptLimit > 0 {
+                                ProgressView(value: accountService.receiptLimitProgress)
+                                    .progressViewStyle(LinearProgressViewStyle(tint: accountService.hasReachedReceiptLimit ? .red : themeManager.accentColor))
+                                    .scaleEffect(x: 1, y: 1.5, anchor: .center)
+                            }
+                        }
+                        .padding(.vertical, 8)
+                        
+                        // Analytics Access
+                        HStack {
+                            Image(systemName: "chart.bar.doc.horizontal")
+                                .foregroundColor(themeManager.accentColor)
+                                .frame(width: 20)
+                            
+                            Text("Analytics Access")
+                                .font(.subheadline)
+                                .foregroundColor(themeManager.primaryTextColor)
+                            
+                            Spacer()
+                            
+                            Text(accountService.getAnalyticsAccessMessage())
+                                .font(.caption)
+                                .foregroundColor(themeManager.secondaryTextColor)
+                        }
+                        .padding(.vertical, 8)
+                        
+                        // Upgrade Button for Free Users
+                        if accountService.isFreeUser {
+                            Button(action: {
+                                accountService.showUpgradePrompt = true
+                            }) {
+                                HStack {
+                                    Image(systemName: "arrow.up.circle.fill")
+                                        .foregroundColor(.white)
+                                    
+                                    Text("Upgrade to Premium")
+                                        .font(.subheadline)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.white)
+                                    
+                                    Spacer()
+                                    
+                                    Image(systemName: "chevron.right")
+                                        .foregroundColor(.white)
+                                        .font(.caption)
+                                }
+                                .padding()
+                                .background(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [themeManager.accentColor, themeManager.accentColor.opacity(0.8)]),
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .cornerRadius(12)
+                            }
+                            .padding(.vertical, 4)
                         }
                     }
                     .listRowBackground(themeManager.cardBackgroundColor)
@@ -194,73 +290,6 @@ struct SettingsView: View {
                     }
                     .listRowBackground(themeManager.cardBackgroundColor)
                     
-                    // Developer Testing (Only show in Debug builds)
-                    #if DEBUG
-                    Section(header: Text("Developer Testing")
-                        .foregroundColor(themeManager.secondaryTextColor)) {
-                        
-                        Button(action: {
-                            sendTestNotification()
-                        }) {
-                            SettingsRow(
-                                icon: "bell.badge",
-                                title: "Test Basic Notification",
-                                themeManager: themeManager
-                            )
-                        }
-                        
-                        Button(action: {
-                            sendTestSaleNotification()
-                        }) {
-                            SettingsRow(
-                                icon: "tag.fill",
-                                title: "Test Sale Alert",
-                                themeManager: themeManager
-                            )
-                        }
-                        
-                        Button(action: {
-                            sendTestPriceDropNotification()
-                        }) {
-                            SettingsRow(
-                                icon: "arrow.down.circle.fill",
-                                title: "Test Price Drop Alert",
-                                themeManager: themeManager
-                            )
-                        }
-                        
-                        Button(action: {
-                            sendTestReceiptNotification()
-                        }) {
-                            SettingsRow(
-                                icon: "doc.badge.plus",
-                                title: "Test Receipt Processed",
-                                themeManager: themeManager
-                            )
-                        }
-                        
-                        Button(action: {
-                            sendAdvancedTestNotification()
-                        }) {
-                            SettingsRow(
-                                icon: "hammer.fill",
-                                title: "Advanced Testing",
-                                themeManager: themeManager
-                            )
-                        }
-                        
-                        Button(action: {
-                            checkNotificationPermissions()
-                        }) {
-                            SettingsRow(
-                                icon: "questionmark.circle.fill",
-                                title: "Check Permissions",
-                                themeManager: themeManager
-                            )
-                        }
-                    }
-                    .listRowBackground(themeManager.cardBackgroundColor)
-                    #endif
                     
                     // Logout
                     Section {
@@ -278,11 +307,17 @@ struct SettingsView: View {
                     }
                     .listRowBackground(themeManager.cardBackgroundColor)
                 }
-                .background(Color.clear)
+                .background(themeManager.backgroundColor)
                 .onAppear {
                     // Configure list appearance for theme
                     UITableView.appearance().backgroundColor = UIColor.clear
                     UITableView.appearance().separatorColor = UIColor.clear
+                }
+                .onChange(of: themeManager.isDarkMode) { _ in
+                    // Update table view background when theme changes
+                    DispatchQueue.main.async {
+                        UITableView.appearance().backgroundColor = UIColor.clear
+                    }
                 }
             }
             .navigationTitle("Settings")
@@ -328,147 +363,6 @@ struct SettingsView: View {
         }
     }
     
-    // MARK: - Testing Methods
-    
-    #if DEBUG
-    private func sendTestNotification() {
-        // First request permission, then send notification
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
-            DispatchQueue.main.async {
-                if granted {
-                    self.scheduleTestNotification(
-                        title: "🧪 Test Notification",
-                        body: "This is a test notification from PriceAdjustPro!",
-                        delay: 2
-                    )
-                } else {
-                    print("❌ Notification permission denied")
-                }
-            }
-        }
-        
-        AppLogger.logDataOperation("Test notification triggered", success: true)
-        print("🧪 Test notification sent!")
-    }
-    
-    private func sendTestSaleNotification() {
-        scheduleTestNotification(
-            title: "🏷️ New Sale Alert!",
-            body: "Save $5.00 on Kirkland Signature Organic Coconut Oil with Instant Rebate",
-            delay: 2
-        )
-        AppLogger.logDataOperation("Test sale notification triggered", success: true)
-        print("🏷️ Test sale notification sent!")
-    }
-    
-    private func sendTestPriceDropNotification() {
-        scheduleTestNotification(
-            title: "📉 Price Drop Alert!",
-            body: "Kirkland Signature Organic Coconut Oil dropped $5.00 to $19.99",
-            delay: 2
-        )
-        AppLogger.logDataOperation("Test price drop notification triggered", success: true)
-        print("📉 Test price drop notification sent!")
-    }
-    
-    private func sendTestReceiptNotification() {
-        scheduleTestNotification(
-            title: "✅ Receipt Processed!",
-            body: "Receipt #TEST123456 processed with 15 items",
-            delay: 2
-        )
-        AppLogger.logDataOperation("Test receipt notification triggered", success: true)
-        print("✅ Test receipt notification sent!")
-    }
-    
-    private func sendAdvancedTestNotification() {
-        // Send a custom notification with advanced features
-        let content = UNMutableNotificationContent()
-        content.title = "🧪 Advanced Test"
-        content.body = "This is an advanced notification test with custom timing and actions."
-        content.sound = .default
-        content.badge = 1
-        
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 3, repeats: false)
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
-        
-        UNUserNotificationCenter.current().add(request) { error in
-            DispatchQueue.main.async {
-                if let error = error {
-                    AppLogger.logError(error, context: "Advanced test notification")
-                } else {
-                    AppLogger.logDataOperation("Advanced test notification scheduled", success: true)
-                }
-            }
-        }
-        
-        print("🔬 Advanced test notification scheduled for 3 seconds!")
-    }
-    
-    private func scheduleTestNotification(title: String, body: String, delay: TimeInterval) {
-        let content = UNMutableNotificationContent()
-        content.title = title
-        content.body = body
-        content.sound = .default
-        content.badge = 1
-        
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: delay, repeats: false)
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
-        
-        UNUserNotificationCenter.current().add(request) { error in
-            DispatchQueue.main.async {
-                if let error = error {
-                    print("❌ Notification scheduling failed: \(error.localizedDescription)")
-                    AppLogger.logError(error, context: "Notification scheduling")
-                } else {
-                    print("✅ Notification scheduled: \(title)")
-                }
-            }
-        }
-    }
-    
-    private func checkNotificationPermissions() {
-        UNUserNotificationCenter.current().getNotificationSettings { settings in
-            DispatchQueue.main.async {
-                print("🔍 Notification Permission Status:")
-                print("  - Authorization: \(settings.authorizationStatus.rawValue)")
-                print("  - Alert Setting: \(settings.alertSetting.rawValue)")
-                print("  - Badge Setting: \(settings.badgeSetting.rawValue)")
-                print("  - Sound Setting: \(settings.soundSetting.rawValue)")
-                print("  - Notification Center: \(settings.notificationCenterSetting.rawValue)")
-                print("  - Lock Screen: \(settings.lockScreenSetting.rawValue)")
-                print("  - Car Play: \(settings.carPlaySetting.rawValue)")
-                
-                switch settings.authorizationStatus {
-                case .authorized:
-                    print("✅ Notifications are AUTHORIZED")
-                case .denied:
-                    print("❌ Notifications are DENIED - User needs to enable in Settings")
-                case .notDetermined:
-                    print("⚠️ Notifications are NOT DETERMINED - Need to request permission")
-                    // Request permission
-                    UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
-                        DispatchQueue.main.async {
-                            if granted {
-                                print("✅ Permission granted!")
-                            } else {
-                                print("❌ Permission denied: \(error?.localizedDescription ?? "Unknown error")")
-                            }
-                        }
-                    }
-                case .provisional:
-                    print("⚠️ Notifications are PROVISIONAL")
-                case .ephemeral:
-                    print("⚠️ Notifications are EPHEMERAL")
-                @unknown default:
-                    print("⚠️ Unknown notification authorization status")
-                }
-                
-                AppLogger.logDataOperation("Notification permissions checked", success: true)
-            }
-        }
-    }
-    #endif
     
     // MARK: - Biometric Authentication
     
@@ -579,9 +473,14 @@ struct NotificationSettingsView: View {
                 }
                 .listRowBackground(themeManager.cardBackgroundColor)
             }
-            .background(Color.clear)
+            .background(themeManager.backgroundColor)
             .onAppear {
                 UITableView.appearance().backgroundColor = UIColor.clear
+            }
+            .onChange(of: themeManager.isDarkMode) { _ in
+                DispatchQueue.main.async {
+                    UITableView.appearance().backgroundColor = UIColor.clear
+                }
             }
         }
         .navigationTitle("Notifications")
@@ -630,9 +529,14 @@ struct DataManagementView: View {
                 }
                 .listRowBackground(themeManager.cardBackgroundColor)
             }
-            .background(Color.clear)
+            .background(themeManager.backgroundColor)
             .onAppear {
                 UITableView.appearance().backgroundColor = UIColor.clear
+            }
+            .onChange(of: themeManager.isDarkMode) { _ in
+                DispatchQueue.main.async {
+                    UITableView.appearance().backgroundColor = UIColor.clear
+                }
             }
         }
         .navigationTitle("Data Management")

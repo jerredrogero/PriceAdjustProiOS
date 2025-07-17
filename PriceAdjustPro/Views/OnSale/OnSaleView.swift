@@ -4,7 +4,9 @@ struct OnSaleView: View {
     @EnvironmentObject var themeManager: ThemeManager
     @StateObject private var viewModel = OnSaleViewModel()
     @State private var searchText = ""
+    @State private var debouncedSearchText = ""
     @State private var selectedCategory = "All"
+    @State private var searchTimer: Timer?
     
     var body: some View {
         NavigationView {
@@ -106,16 +108,25 @@ struct OnSaleView: View {
                         }
                         .padding()
                     }
+                    .refreshable {
+                        viewModel.loadSales()
+                    }
                 }
                 }
             }
             .navigationTitle("On Sale")
-            .refreshable {
-                viewModel.loadSales()
-            }
         }
         .onAppear {
             viewModel.loadSales()
+        }
+        .onChange(of: searchText) { newValue in
+            // Cancel the previous timer
+            searchTimer?.invalidate()
+            
+            // Set a new timer
+            searchTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { _ in
+                debouncedSearchText = newValue
+            }
         }
     }
     
@@ -127,39 +138,117 @@ struct OnSaleView: View {
             filtered = filtered.filter { extractCategory(from: $0.description) == selectedCategory }
         }
         
-        // Filter by search text
-        if !searchText.isEmpty {
+        // Filter by search text (using debounced search)
+        if !debouncedSearchText.isEmpty {
             filtered = filtered.filter {
-                $0.description.localizedCaseInsensitiveContains(searchText) ||
-                $0.itemCode.localizedCaseInsensitiveContains(searchText)
+                $0.description.localizedCaseInsensitiveContains(debouncedSearchText) ||
+                $0.itemCode.localizedCaseInsensitiveContains(debouncedSearchText)
             }
         }
-        
         return filtered
     }
     
     private func extractCategory(from description: String) -> String {
         let desc = description.lowercased()
         
-        // Simple category extraction (matches web app logic)
-        if desc.contains("food") || desc.contains("organic") || desc.contains("snack") || desc.contains("meat") {
-            return "Food & Beverages"
-        } else if desc.contains("vitamin") || desc.contains("health") || desc.contains("beauty") || desc.contains("supplement") {
-            return "Health & Beauty"
-        } else if desc.contains("electronic") || desc.contains("tv") || desc.contains("computer") || desc.contains("phone") {
-            return "Electronics"
-        } else if desc.contains("household") || desc.contains("cleaning") || desc.contains("detergent") {
-            return "Household & Cleaning"
-        } else if desc.contains("clothing") || desc.contains("apparel") || desc.contains("shirt") {
-            return "Clothing"
-        } else if desc.contains("home") || desc.contains("furniture") || desc.contains("garden") {
-            return "Home & Garden"
-        } else if desc.contains("baby") || desc.contains("kid") || desc.contains("toy") {
+        // Health & Beauty (check first for specific personal care items)
+        let healthBeautyKeywords = [
+            "shampoo", "conditioner", "lotion", "cream", "moisturizer", "cleanser",
+            "soap", "deodorant", "antiperspirant", "toothpaste", "toothbrush",
+            "sunscreen", "beauty bar", "face", "skin", "hair", "makeup",
+            "cosmetic", "perfume", "cologne", "vitamin", "supplement",
+            "probiotic", "omega", "calcium", "magnesium", "zinc", "iron",
+            "multivitamin", "health", "wellness", "medicine", "ointment",
+            "bandage", "first aid", "pain relief"
+        ]
+        
+        // Baby & Kids (check early to avoid misclassification)
+        let babyKidsKeywords = [
+            "baby", "infant", "toddler", "kids", "children", "diaper",
+            "wipes", "formula", "baby food", "stroller", "car seat",
+            "toy", "game", "puzzle", "educational", "learning"
+        ]
+        
+        // Food & Beverages
+        let foodBeverageKeywords = [
+            "organic", "food", "snack", "meat", "chicken", "beef", "pork",
+            "fish", "salmon", "tuna", "bread", "pasta", "rice", "cereal",
+            "milk", "cheese", "yogurt", "butter", "oil", "nuts", "trail mix",
+            "coffee", "tea", "juice", "water", "soda", "energy drink",
+            "protein", "bar", "cookie", "chocolate", "candy", "frozen",
+            "pizza", "ice cream", "fruit", "vegetable", "avocado"
+        ]
+        
+        // Household & Cleaning
+        let householdCleaningKeywords = [
+            "detergent", "laundry", "dishwasher", "cleaning", "cleaner",
+            "disinfectant", "wipes", "toilet paper", "paper towel",
+            "trash bag", "storage", "bin", "container", "lysol",
+            "tide", "cascade", "charmin", "bounty", "scrub"
+        ]
+        
+        // Electronics
+        let electronicsKeywords = [
+            "tv", "television", "laptop", "computer", "tablet", "ipad",
+            "phone", "smartphone", "camera", "headphone", "speaker",
+            "monitor", "printer", "electronic", "tech", "digital",
+            "smart", "wifi", "bluetooth", "samsung", "apple", "hp",
+            "sony", "lg", "dell", "chromebook", "macbook"
+        ]
+        
+        // Home & Garden
+        let homeGardenKeywords = [
+            "mattress", "pillow", "sheet", "blanket", "towel", "furniture",
+            "sofa", "chair", "table", "bed", "lamp", "curtain",
+            "vacuum", "appliance", "kitchen", "cookware", "knife",
+            "blender", "mixer", "grill", "garden", "plant", "seed",
+            "tool", "hardware", "light", "security", "alarm"
+        ]
+        
+        // Clothing
+        let clothingKeywords = [
+            "shirt", "pants", "shorts", "dress", "jacket", "coat",
+            "shoes", "socks", "underwear", "bra", "clothing", "apparel",
+            "fashion", "wear", "polo", "jeans", "legging", "blouse",
+            "athletic wear", "activewear", "swimwear"
+        ]
+        
+        // Automotive
+        let automotiveKeywords = [
+            "tire", "tires", "car", "auto", "automotive", "motor oil",
+            "brake", "battery", "engine", "vehicle", "truck", "suv"
+        ]
+        
+        // Check categories in priority order (most specific first)
+        if containsAnyKeyword(desc, keywords: babyKidsKeywords) {
             return "Baby & Kids"
-        } else if desc.contains("automotive") || desc.contains("tire") || desc.contains("car") {
+        } else if containsAnyKeyword(desc, keywords: healthBeautyKeywords) {
+            return "Health & Beauty"
+        } else if containsAnyKeyword(desc, keywords: foodBeverageKeywords) {
+            return "Food & Beverages"
+        } else if containsAnyKeyword(desc, keywords: householdCleaningKeywords) {
+            return "Household & Cleaning"
+        } else if containsAnyKeyword(desc, keywords: electronicsKeywords) {
+            return "Electronics"
+        } else if containsAnyKeyword(desc, keywords: homeGardenKeywords) {
+            return "Home & Garden"
+        } else if containsAnyKeyword(desc, keywords: clothingKeywords) {
+            return "Clothing"
+        } else if containsAnyKeyword(desc, keywords: automotiveKeywords) {
             return "Automotive"
         }
+        
         return "Other"
+    }
+    
+    private func containsAnyKeyword(_ text: String, keywords: [String]) -> Bool {
+        return keywords.contains { keyword in
+            // Use word boundaries to avoid partial matches
+            let pattern = "\\b\(NSRegularExpression.escapedPattern(for: keyword))\\b"
+            let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive)
+            let range = NSRange(location: 0, length: text.utf16.count)
+            return regex?.firstMatch(in: text, options: [], range: range) != nil
+        }
     }
 }
 

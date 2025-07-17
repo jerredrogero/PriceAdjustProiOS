@@ -53,7 +53,7 @@ class OnSaleViewModel: ObservableObject {
                     self?.checkForNewSales(newSales: response.sales, previousCount: previousSalesCount)
                     
                     self?.sales = response.sales
-                    self?.activePromotions = response.activePromotions
+                    self?.activePromotions = response.activePromotions ?? []
                     self?.errorMessage = nil
                 }
             )
@@ -67,23 +67,23 @@ class OnSaleViewModel: ObservableObject {
         let samplePromotions = [
             Promotion(
                 title: "Instant Rebates",
-                saleStartDate: "2024-06-01",
-                saleEndDate: "2024-07-31",
-                daysRemaining: 31,
+                saleStartDate: "2025-07-01",
+                saleEndDate: "2025-08-31",
+                daysRemaining: calculateDaysRemaining(endDate: "2025-08-31"),
                 itemsCount: 25
             ),
             Promotion(
                 title: "Summer Sale",
-                saleStartDate: "2024-06-15",
-                saleEndDate: "2024-07-15",
-                daysRemaining: 15,
+                saleStartDate: "2025-07-10",
+                saleEndDate: "2025-08-15",
+                daysRemaining: calculateDaysRemaining(endDate: "2025-08-15"),
                 itemsCount: 45
             ),
             Promotion(
                 title: "Manufacturer Rebates",
-                saleStartDate: "2024-06-01",
-                saleEndDate: "2024-08-31",
-                daysRemaining: 62,
+                saleStartDate: "2025-07-01",
+                saleEndDate: "2025-09-30",
+                daysRemaining: calculateDaysRemaining(endDate: "2025-09-30"),
                 itemsCount: 18
             )
         ]
@@ -271,5 +271,20 @@ class OnSaleViewModel: ObservableObject {
         }
         
         return saleItems + additionalItems
+    }
+    
+    private func calculateDaysRemaining(endDate: String) -> Int {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        
+        guard let end = formatter.date(from: endDate) else {
+            return 0
+        }
+        
+        let now = Date()
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.day], from: now, to: end)
+        
+        return max(0, components.day ?? 0)
     }
 } 

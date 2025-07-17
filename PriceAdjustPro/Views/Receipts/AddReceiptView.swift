@@ -7,6 +7,7 @@ struct AddReceiptView: View {
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var receiptStore: ReceiptStore
     @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var accountService: AccountService
     @StateObject private var pdfService = PDFService.shared
     
     @State private var showingImagePicker = false
@@ -64,21 +65,37 @@ struct AddReceiptView: View {
     }
     
     private var mainContent: some View {
-        ZStack {
-            themeManager.backgroundColor.ignoresSafeArea()
-            
-            ScrollView {
-                VStack(spacing: 30) {
-                    headerSection
-                    uploadOptionsSection
-                    processingSection
-                    messageSection
-                    instructionsSection
-                    Spacer(minLength: 50)
+        ScrollView {
+            VStack(spacing: 24) {
+                // Upload Limit Status (for free users)
+                if accountService.isFreeUser {
+                    uploadLimitStatusSection
                 }
-                .padding(.horizontal)
+                
+                // Header
+                headerSection
+                
+                // Upload options or processing state
+                if isProcessing {
+                    processingSection
+                } else if selectedImage != nil || selectedPDF != nil {
+                    selectedContentPreview
+                } else {
+                    uploadOptionsSection
+                }
+                
+                // Message section
+                messageSection
+                
+                // Instructions
+                instructionsSection
+                
+                Spacer(minLength: 100)
             }
+            .padding(.horizontal, 24)
+            .padding(.top, 20)
         }
+        .background(themeManager.backgroundColor)
     }
     
     private var headerSection: some View {
@@ -124,43 +141,82 @@ struct AddReceiptView: View {
         VStack(spacing: 16) {
             // Camera option
             Button(action: {
-                showingCamera = true
+                if accountService.checkReceiptUploadLimit() {
+                    showingCamera = true
+                }
             }) {
                 ModernUploadOptionView(
                     icon: "camera.fill",
                     title: "Take Photo",
                     description: "Capture receipt with camera",
                     color: themeManager.accentColor,
-                    isRecommended: true
+                    isRecommended: true,
+                    isDisabled: !accountService.canUploadReceipts
                 )
             }
             .buttonStyle(PlainButtonStyle())
+            .disabled(!accountService.canUploadReceipts)
             
             // Photo Library option
             Button(action: {
-                showingPhotoLibrary = true
+                if accountService.checkReceiptUploadLimit() {
+                    showingPhotoLibrary = true
+                }
             }) {
                 ModernUploadOptionView(
                     icon: "photo.on.rectangle",
                     title: "Choose from Photos",
                     description: "Select from photo library",
-                    color: .costcoRed
+                    color: .costcoRed,
+                    isDisabled: !accountService.canUploadReceipts
                 )
             }
             .buttonStyle(PlainButtonStyle())
+            .disabled(!accountService.canUploadReceipts)
             
             // PDF/Document option (kept but de-emphasized)
             Button(action: {
-                showingDocumentPicker = true
+                if accountService.checkReceiptUploadLimit() {
+                    showingDocumentPicker = true
+                }
             }) {
                 ModernUploadOptionView(
                     icon: "doc.fill",
                     title: "Upload Document",
                     description: "Select PDF or document file",
-                    color: .orange
+                    color: .orange,
+                    isDisabled: !accountService.canUploadReceipts
                 )
             }
             .buttonStyle(PlainButtonStyle())
+            .disabled(!accountService.canUploadReceipts)
+            
+            // Limit reached message
+            if !accountService.canUploadReceipts {
+                VStack(spacing: 12) {
+                    Text("Upload limit reached")
+                        .font(.headline)
+                        .foregroundColor(themeManager.errorColor)
+                    
+                    Text("Upgrade to Premium for unlimited receipt uploads")
+                        .font(.subheadline)
+                        .foregroundColor(themeManager.secondaryTextColor)
+                        .multilineTextAlignment(.center)
+                    
+                    Button("Upgrade Now") {
+                        accountService.showUpgradePrompt = true
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.regular)
+                }
+                .padding()
+                .background(themeManager.errorColor.opacity(0.1))
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(themeManager.errorColor.opacity(0.3), lineWidth: 1)
+                )
+            }
         }
     }
     
@@ -277,6 +333,50 @@ struct AddReceiptView: View {
         .padding()
         .background(themeManager.cardBackgroundColor)
         .cornerRadius(12)
+        .shadow(radius: 2)
+    }
+    
+    // MARK: - Upload Limit Status Section
+    
+    private var uploadLimitStatusSection: some View {
+        VStack(spacing: 16) {
+            HStack {
+                Image(systemName: "doc.badge.plus")
+                    .font(.title2)
+                    .foregroundColor(themeManager.accentColor)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Upload Limit")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(themeManager.primaryTextColor)
+                    
+                    Text(accountService.getReceiptLimitMessage())
+                        .font(.subheadline)
+                        .foregroundColor(themeManager.secondaryTextColor)
+                }
+                
+                Spacer()
+                
+                if accountService.hasReachedReceiptLimit {
+                    Button("Upgrade") {
+                        accountService.showUpgradePrompt = true
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                }
+            }
+            
+            // Progress bar
+            if accountService.receiptLimit > 0 {
+                ProgressView(value: accountService.receiptLimitProgress)
+                    .progressViewStyle(LinearProgressViewStyle(tint: accountService.hasReachedReceiptLimit ? .red : themeManager.accentColor))
+                    .scaleEffect(x: 1, y: 2, anchor: .center)
+            }
+        }
+        .padding(20)
+        .background(themeManager.cardBackgroundColor)
+        .cornerRadius(16)
         .shadow(radius: 2)
     }
     
@@ -462,6 +562,98 @@ struct AddReceiptView: View {
             showingSuccessAlert = true
         }
     }
+    
+    @ViewBuilder
+    private var selectedContentPreview: some View {
+        VStack(spacing: 16) {
+            // Preview header
+            HStack {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundColor(.green)
+                    .font(.title2)
+                
+                Text("Ready to Process")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(themeManager.primaryTextColor)
+                
+                Spacer()
+                
+                Button("Change") {
+                    selectedImage = nil
+                    selectedPDF = nil
+                }
+                .font(.subheadline)
+                .foregroundColor(themeManager.accentColor)
+            }
+            
+            // Preview content
+            if let image = selectedImage {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxHeight: 200)
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+                    )
+            } else if selectedPDF != nil {
+                VStack(spacing: 12) {
+                    Image(systemName: "doc.fill")
+                        .font(.system(size: 60))
+                        .foregroundColor(themeManager.accentColor)
+                    
+                    Text("PDF Selected")
+                        .font(.headline)
+                        .foregroundColor(themeManager.primaryTextColor)
+                    
+                    Text("Ready to upload and process")
+                        .font(.subheadline)
+                        .foregroundColor(themeManager.secondaryTextColor)
+                }
+                .frame(maxWidth: .infinity, minHeight: 120)
+                .background(themeManager.cardBackgroundColor)
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+                )
+            }
+            
+            // Upload button
+            Button(action: {
+                if selectedImage != nil {
+                    Task {
+                        await processImage()
+                    }
+                } else if selectedPDF != nil {
+                    Task {
+                        await processPDF()
+                    }
+                }
+            }) {
+                HStack {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .font(.title3)
+                    
+                    Text("Upload Receipt")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(themeManager.accentColor)
+                .cornerRadius(12)
+            }
+            .disabled(!accountService.canUploadReceipts)
+        }
+        .padding()
+        .background(themeManager.cardBackgroundColor)
+        .cornerRadius(16)
+        .shadow(radius: 4)
+    }
 }
 
 // MARK: - Modern Components
@@ -473,69 +665,57 @@ struct ModernUploadOptionView: View {
     let description: String
     let color: Color
     var isRecommended: Bool = false
+    var isDisabled: Bool = false
     
     var body: some View {
-        HStack(spacing: 16) {
-            // Icon with gradient background
-            ZStack {
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                color.opacity(0.8),
-                                color
-                            ]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 50, height: 50)
-                
-                Image(systemName: icon)
-                    .font(.title2)
-                    .foregroundColor(.white)
-            }
+        VStack(spacing: 16) {
+            // Icon
+            Image(systemName: icon)
+                .font(.system(size: 32, weight: .medium))
+                .foregroundColor(isDisabled ? .gray : color)
+                .frame(width: 60, height: 60)
+                .background(
+                    Circle()
+                        .fill(isDisabled ? Color.gray.opacity(0.2) : color.opacity(0.1))
+                )
             
-            VStack(alignment: .leading, spacing: 4) {
+            // Content
+            VStack(spacing: 6) {
                 HStack {
                     Text(title)
                         .font(.headline)
-                        .foregroundColor(themeManager.primaryTextColor)
+                        .fontWeight(.semibold)
+                        .foregroundColor(isDisabled ? .gray : themeManager.primaryTextColor)
                     
-                    if isRecommended {
-                        Text("RECOMMENDED")
-                            .font(.caption2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
+                    if isRecommended && !isDisabled {
+                        Text("Recommended")
+                            .font(.caption)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 2)
-                            .background(themeManager.successColor)
+                            .background(Color.green.opacity(0.2))
+                            .foregroundColor(.green)
                             .cornerRadius(4)
                     }
                 }
                 
                 Text(description)
                     .font(.subheadline)
-                    .foregroundColor(themeManager.secondaryTextColor)
+                    .foregroundColor(isDisabled ? .gray : themeManager.secondaryTextColor)
+                    .multilineTextAlignment(.center)
             }
-            
-            Spacer()
-            
-            Image(systemName: "chevron.right")
-                .foregroundColor(themeManager.secondaryTextColor)
-                .font(.caption)
         }
-        .padding()
-        .background(themeManager.cardBackgroundColor)
-        .cornerRadius(12)
-        .shadow(radius: 3)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(
-                    isRecommended ? themeManager.accentColor.opacity(0.5) : Color.clear,
-                    lineWidth: isRecommended ? 2 : 0
-                )
+        .padding(20)
+        .frame(maxWidth: .infinity, minHeight: 150)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(isDisabled ? Color.gray.opacity(0.1) : themeManager.cardBackgroundColor)
+                .shadow(radius: isDisabled ? 0 : 4)
         )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(isDisabled ? Color.gray.opacity(0.3) : color.opacity(0.3), lineWidth: 1)
+        )
+        .opacity(isDisabled ? 0.6 : 1.0)
     }
 }
 

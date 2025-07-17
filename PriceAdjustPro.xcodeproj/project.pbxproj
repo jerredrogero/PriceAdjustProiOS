@@ -32,6 +32,8 @@
 		3C0A1E692C8A123500000001 /* ThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E6A2C8A123500000001 /* ThemeManager.swift */; };
 		3C0A1E6B2C8A123500000001 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E6C2C8A123500000001 /* SettingsView.swift */; };
 		3C0A1E702C8A123500000001 /* EditReceiptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E712C8A123500000001 /* EditReceiptView.swift */; };
+		3C0A1E722C8A123500000001 /* AccountService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E732C8A123500000001 /* AccountService.swift */; };
+		D6E4A92BF6A6D9C180D8FBF6 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6E4A92BF6A6D9C180D8FBF7 /* SplashView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -61,6 +63,8 @@
 		3C0A1E6A2C8A123500000001 /* ThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeManager.swift; sourceTree = "<group>"; };
 		3C0A1E6C2C8A123500000001 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		3C0A1E712C8A123500000001 /* EditReceiptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditReceiptView.swift; sourceTree = "<group>"; };
+		3C0A1E732C8A123500000001 /* AccountService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountService.swift; sourceTree = "<group>"; };
+		D6E4A92BF6A6D9C180D8FBF7 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -138,6 +142,7 @@
 		3C0A1E402C8A124F00000001 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				D6E4A92BF6A6D9C180D8FBF7 /* SplashView.swift */,
 				3C0A1E592C8A123500000001 /* Authentication */,
 				3C0A1E5A2C8A123500000001 /* Receipts */,
 				3C0A1E5B2C8A123500000001 /* Analytics */,
@@ -145,6 +150,7 @@
 				3C0A1E672C8A123500000001 /* PriceAdjustments */,
 				3C0A1E682C8A123500000001 /* OnSale */,
 				3C0A1E6D2C8A123500000001 /* Settings */,
+				3C0A1E762C8A123500000001 /* Subscription */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -166,6 +172,7 @@
 				3C0A1E4E2C8A123500000001 /* APIService.swift */,
 				3C0A1E5E2C8A123500000001 /* PDFService.swift */,
 				3C0A1E6A2C8A123500000001 /* ThemeManager.swift */,
+				3C0A1E732C8A123500000001 /* AccountService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -241,6 +248,13 @@
 				3C0A1E6C2C8A123500000001 /* SettingsView.swift */,
 			);
 			path = Settings;
+			sourceTree = "<group>";
+		};
+		3C0A1E762C8A123500000001 /* Subscription */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Subscription;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -338,6 +352,8 @@
 				3C0A1E6B2C8A123500000001 /* SettingsView.swift in Sources */,
 				3C0A1E632C8A123500000001 /* OnSaleView.swift in Sources */,
 				3C0A1E652C8A123500000001 /* OnSaleViewModel.swift in Sources */,
+				3C0A1E722C8A123500000001 /* AccountService.swift in Sources */,
+				D6E4A92BF6A6D9C180D8FBF6 /* SplashView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

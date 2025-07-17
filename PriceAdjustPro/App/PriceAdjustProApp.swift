@@ -84,22 +84,38 @@ struct PriceAdjustProApp: App {
     @StateObject private var authService = AuthenticationService()
     @StateObject private var receiptStore = ReceiptStore()
     @StateObject private var themeManager = ThemeManager()
+    @StateObject private var accountService = AccountService.shared
+    @State private var showSplash = true
     // @StateObject private var notificationManager = NotificationManager.shared
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environment(\.managedObjectContext, persistenceController.container.viewContext)
-                .environmentObject(authService)
-                .environmentObject(receiptStore)
-                .environmentObject(themeManager)
-                // .environmentObject(notificationManager)
-                .preferredColorScheme(themeManager.colorScheme)
-                .onAppear {
-                    // Initialize services on app launch
-                    receiptStore.setPersistenceController(persistenceController)
-                    setupNotifications()
+            ZStack {
+                if showSplash {
+                    SplashView()
+                        .environmentObject(themeManager)
+                } else {
+                    ContentView()
+                        .environment(\.managedObjectContext, persistenceController.container.viewContext)
+                        .environmentObject(authService)
+                        .environmentObject(receiptStore)
+                        .environmentObject(themeManager)
+                        .environmentObject(accountService)
+                        // .environmentObject(notificationManager)
+                        .preferredColorScheme(themeManager.colorScheme)
                 }
+            }
+            .animation(.easeInOut(duration: 0.5), value: showSplash)
+            .onAppear {
+                // Initialize services on app launch
+                receiptStore.setPersistenceController(persistenceController)
+                setupNotifications()
+                
+                // Hide splash screen after 2 seconds
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    showSplash = false
+                }
+            }
         }
     }
     
