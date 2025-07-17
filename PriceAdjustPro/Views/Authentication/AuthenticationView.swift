@@ -31,7 +31,7 @@ struct AuthenticationView: View {
             GeometryReader { geometry in
                 ZStack {
                     // Background - solid red (same in light and dark mode)
-                    Color(red: 0.89, green: 0.09, blue: 0.22)
+                    Color.costcoRed
                         .ignoresSafeArea()
                     
                     ScrollView {
@@ -305,17 +305,24 @@ struct ModernTextField: View {
             
             HStack(spacing: 12) {
                 Image(systemName: icon)
-                    .foregroundColor(isFocused ? .red : .gray)
+                    .foregroundColor(isFocused ? Color.costcoRed : .gray)
                     .frame(width: 20)
                     .animation(.easeInOut(duration: 0.2), value: isFocused)
                     .accessibilityHidden(true) // Decorative icon
                 
-                TextField(placeholder, text: $text)
-                    .foregroundColor(.black)
-                    .keyboardType(keyboardType)
-                    .autocapitalization(keyboardType == .emailAddress ? .none : .words)
-                    .accentColor(.red)
-                    .focused($isFocused)
+                ZStack(alignment: .leading) {
+                    if text.isEmpty {
+                        Text(placeholder)
+                            .foregroundColor(.gray)
+                            .allowsHitTesting(false)
+                    }
+                    TextField("", text: $text)
+                        .foregroundColor(.black)
+                        .keyboardType(keyboardType)
+                        .autocapitalization(keyboardType == .emailAddress ? .none : .words)
+                        .accentColor(Color.costcoRed)
+                        .focused($isFocused)
+                }
                     .accessibilityLabel(title)
                     .accessibilityHint(placeholder)
                     .accessibilityIdentifier(title.lowercased().replacingOccurrences(of: " ", with: "-"))
@@ -328,7 +335,7 @@ struct ModernTextField: View {
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(
-                                isFocused ? .red : Color.gray.opacity(0.3),
+                                isFocused ? Color.costcoRed : Color.gray.opacity(0.3),
                                 lineWidth: isFocused ? 2 : 1
                             )
                     )
@@ -357,21 +364,28 @@ struct ModernPasswordField: View {
             
             HStack(spacing: 12) {
                 Image(systemName: "lock")
-                    .foregroundColor(isFocused ? .red : .gray)
+                    .foregroundColor(isFocused ? Color.costcoRed : .gray)
                     .frame(width: 20)
                     .animation(.easeInOut(duration: 0.2), value: isFocused)
                     .accessibilityHidden(true) // Decorative icon
                 
-                Group {
-                    if showPassword {
-                        TextField(placeholder, text: $text)
-                    } else {
-                        SecureField(placeholder, text: $text)
+                ZStack(alignment: .leading) {
+                    if text.isEmpty {
+                        Text(placeholder)
+                            .foregroundColor(.gray)
+                            .allowsHitTesting(false)
                     }
+                    Group {
+                        if showPassword {
+                            TextField("", text: $text)
+                        } else {
+                            SecureField("", text: $text)
+                        }
+                    }
+                    .foregroundColor(.black)
+                    .accentColor(Color.costcoRed)
+                    .focused($isFocused)
                 }
-                .foregroundColor(.black)
-                .accentColor(.red)
-                .focused($isFocused)
                 .accessibilityLabel(title)
                 .accessibilityHint(placeholder)
                 .accessibilityIdentifier("password-field")
@@ -394,7 +408,7 @@ struct ModernPasswordField: View {
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(
-                                isFocused ? .red : Color.gray.opacity(0.3),
+                                isFocused ? Color.costcoRed : Color.gray.opacity(0.3),
                                 lineWidth: isFocused ? 2 : 1
                             )
                     )
@@ -468,15 +482,15 @@ struct PrimaryActionButton: View {
             .background(
                 LinearGradient(
                     gradient: Gradient(colors: [
-                        Color(red: 0.89, green: 0.09, blue: 0.22),
-                        Color(red: 0.75, green: 0.05, blue: 0.18)
+                        Color.costcoRed,
+                        Color.costcoRed.opacity(0.8)
                     ]),
                     startPoint: .leading,
                     endPoint: .trailing
                 )
             )
             .cornerRadius(12)
-            .shadow(color: Color(red: 0.89, green: 0.09, blue: 0.22).opacity(0.3), radius: 8, x: 0, y: 4)
+            .shadow(color: Color.costcoRed.opacity(0.3), radius: 8, x: 0, y: 4)
         }
         .disabled(isLoading || !isEnabled)
         .opacity((isLoading || !isEnabled) ? 0.6 : 1.0)
@@ -541,7 +555,7 @@ struct ToggleAuthModeButton: View {
                     .foregroundColor(.gray)
                 
                 Text(isRegistering ? "Sign In" : "Sign Up")
-                    .foregroundColor(.red)
+                    .foregroundColor(Color.costcoRed)
                     .fontWeight(.semibold)
             }
             .font(.subheadline)
