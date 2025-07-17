@@ -111,10 +111,17 @@ struct PriceAdjustProApp: App {
                 receiptStore.setPersistenceController(persistenceController)
                 setupNotifications()
                 
+                // Clear notification badge when app launches
+                clearNotificationBadge()
+                
                 // Hide splash screen after 2 seconds
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                     showSplash = false
                 }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+                // Clear badge when app comes to foreground
+                clearNotificationBadge()
             }
         }
     }
@@ -129,5 +136,15 @@ struct PriceAdjustProApp: App {
         // }
         
         AppLogger.logDataOperation("Notification system initialized", success: true)
+    }
+    
+    private func clearNotificationBadge() {
+        // Clear the app icon badge
+        UIApplication.shared.applicationIconBadgeNumber = 0
+        
+        // Also clear any delivered notifications
+        UNUserNotificationCenter.current().removeAllDeliveredNotifications()
+        
+        AppLogger.logDataOperation("Notification badge cleared", success: true)
     }
 } 
