@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import UserNotifications
 
 class PriceAdjustmentsViewModel: ObservableObject {
     @Published var adjustments: [PriceAdjustment] = []
@@ -9,6 +10,7 @@ class PriceAdjustmentsViewModel: ObservableObject {
     
     private var cancellables = Set<AnyCancellable>()
     private var previousAdjustmentsCount = 0
+    private var checkTimer: Timer?
     
     func loadPriceAdjustments() {
         isLoading = true
@@ -65,43 +67,62 @@ class PriceAdjustmentsViewModel: ObservableObject {
     // MARK: - Notification Functions
     
     private func checkForNewPriceAdjustments(newAdjustments: [PriceAdjustment]) {
-        // Only send notifications if we have more adjustments than before and it's not the initial load
-        guard previousAdjustmentsCount > 0 && newAdjustments.count > previousAdjustmentsCount else { return }
-        
-        let newAdjustmentsCount = newAdjustments.count - previousAdjustmentsCount
-        AppLogger.logDataOperation("Found \(newAdjustmentsCount) new price adjustments", success: true)
-        
-        // Get the new adjustments
-        let newItems = Array(newAdjustments.suffix(newAdjustmentsCount))
-        
-        // Send notifications for significant price drops (> $10)
-        let _ = newItems.filter { $0.priceDifference > 10.0 }
-        
-        // TODO: Re-enable when NotificationManager is added to target
-        // for adjustment in significantAdjustments.prefix(3) { // Limit to 3 to avoid spam
-        //     NotificationManager.shared.sendPriceDropAlert(
-        //         itemName: adjustment.description,
-        //         oldPrice: adjustment.currentPrice,
-        //         newPrice: adjustment.lowerPrice
-        //     )
-        // }
-        
-        // Send general price adjustment notification if there are any new ones
-        if !newItems.isEmpty {
-            let totalNewSavings = newItems.reduce(0) { $0 + $1.priceDifference }
-            AppLogger.logDataOperation("New price adjustments: \(newAdjustmentsCount) items worth $\(String(format: "%.2f", totalNewSavings))", success: true)
-            
-            // TODO: Re-enable when NotificationManager is added to target
-            // NotificationManager.shared.scheduleLocalNotification(
-            //     title: "💰 Price Adjustments Available!",
-            //     body: "You have \(newAdjustmentsCount) new price adjustments worth $\(String(format: "%.2f", totalNewSavings))",
-            //     category: NotificationManager.NotificationCategory.priceDropAlert,
-            //     userInfo: [
-            //         "type": "price_adjustments",
-            //         "count": newAdjustmentsCount,
-            //         "total_savings": totalNewSavings
-            //     ]
-            // )
+        // This method is only used for UI updates now - daily checking handles notifications
+        // Just update the previous count for tracking
+        previousAdjustmentsCount = newAdjustments.count
+    }
+    
+    // MARK: - Daily Checking
+    
+    func checkForPriceAdjustments() {
+        // Simple check - just fetch current adjustments and notify if any exist
+        APIService.shared.getPriceAdjustments()
+            .receive(on: DispatchQueue.main)
+            .sink(
+                receiveCompletion: { completion in
+                    if case .failure(let error) = completion {
+                        AppLogger.logError(error, context: "Daily price adjustment check")
+                    }
+                },
+                receiveValue: { response in
+                    // If there are any price adjustments, send notification
+                    if !response.adjustments.isEmpty {
+                        AppLogger.logDataOperation("Found \(response.adjustments.count) price adjustments worth $\(String(format: "%.2f", response.totalPotentialSavings))", success: true)
+                        
+                        // Post notification to main app for handling
+                        NotificationCenter.default.post(
+                            name: .priceAdjustmentFound,
+                            object: nil,
+                            userInfo: [
+                                "count": response.adjustments.count,
+                                "totalSavings": response.totalPotentialSavings
+                            ]
+                        )
+                    } else {
+                        AppLogger.logDataOperation("No price adjustments found during daily check", success: true)
+                    }
+                }
+            )
+            .store(in: &cancellables)
+    }
+    
+    func startDailyChecking() {
+        // Check once a day for price adjustments (24 hours = 86400 seconds)
+        checkTimer = Timer.scheduledTimer(withTimeInterval: 86400, repeats: true) { [weak self] _ in
+            AppLogger.logDataOperation("Running daily price adjustment check", success: true)
+            self?.checkForPriceAdjustments()
         }
+        
+        AppLogger.logDataOperation("Started daily price adjustment checking", success: true)
+    }
+    
+    func stopDailyChecking() {
+        checkTimer?.invalidate()
+        checkTimer = nil
+        AppLogger.logDataOperation("Stopped daily price adjustment checking", success: true)
+    }
+    
+    deinit {
+        stopDailyChecking()
     }
 } 

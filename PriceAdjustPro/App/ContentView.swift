@@ -2,12 +2,15 @@ import SwiftUI
 import CoreData
 import KeychainAccess
 import Combine
+import UserNotifications
 
-// MARK: - Temporary notification names (until NotificationManager is added to build target)
+// Local notification name extensions for navigation
 extension Notification.Name {
     static let navigateToOnSale = Notification.Name("navigateToOnSale")
     static let navigateToReceipts = Notification.Name("navigateToReceipts")
     static let navigateToReceipt = Notification.Name("navigateToReceipt")
+    static let navigateToPriceAdjustments = Notification.Name("navigateToPriceAdjustments")
+    static let priceAdjustmentFound = Notification.Name("priceAdjustmentFound")
 }
 
 struct ContentView: View {
@@ -52,7 +55,7 @@ struct ContentView: View {
             object: nil,
             queue: .main
         ) { _ in
-            selectedTab = 1 // On Sale tab
+            selectedTab = 4 // On Sale tab
         }
         
         NotificationCenter.default.addObserver(
@@ -60,7 +63,7 @@ struct ContentView: View {
             object: nil,
             queue: .main
         ) { _ in
-            selectedTab = 2 // Receipts tab
+            selectedTab = 1 // Receipts tab
         }
         
         NotificationCenter.default.addObserver(
@@ -68,8 +71,16 @@ struct ContentView: View {
             object: nil,
             queue: .main
         ) { notification in
-            selectedTab = 2 // Receipts tab
+            selectedTab = 1 // Receipts tab
             // Additional handling for specific receipt could be added here
+        }
+        
+        NotificationCenter.default.addObserver(
+            forName: .navigateToPriceAdjustments,
+            object: nil,
+            queue: .main
+        ) { _ in
+            selectedTab = 3 // Price Adjustments tab
         }
     }
 }

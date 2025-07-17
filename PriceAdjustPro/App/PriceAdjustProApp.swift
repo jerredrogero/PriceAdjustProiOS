@@ -1,4 +1,5 @@
 import SwiftUI
+import UserNotifications
 
 // MARK: - Global Secure Logging Utility
 struct AppLogger {
@@ -85,8 +86,9 @@ struct PriceAdjustProApp: App {
     @StateObject private var receiptStore = ReceiptStore()
     @StateObject private var themeManager = ThemeManager()
     @StateObject private var accountService = AccountService.shared
-    @State private var showSplash = true
     // @StateObject private var notificationManager = NotificationManager.shared
+    @StateObject private var priceAdjustmentsViewModel = PriceAdjustmentsViewModel()
+    @State private var showSplash = true
     
     var body: some Scene {
         WindowGroup {
@@ -102,6 +104,7 @@ struct PriceAdjustProApp: App {
                         .environmentObject(themeManager)
                         .environmentObject(accountService)
                         // .environmentObject(notificationManager)
+                        .environmentObject(priceAdjustmentsViewModel)
                         .preferredColorScheme(themeManager.colorScheme)
                 }
             }
@@ -123,10 +126,32 @@ struct PriceAdjustProApp: App {
                 // Clear badge when app comes to foreground
                 clearNotificationBadge()
             }
+            .onReceive(authService.$isAuthenticated) { isAuthenticated in
+                if isAuthenticated {
+                    // Start daily checking when user logs in
+                    priceAdjustmentsViewModel.startDailyChecking()
+                    // Do an initial check
+                    priceAdjustmentsViewModel.checkForPriceAdjustments()
+                } else {
+                    // Stop daily checking when user logs out
+                    priceAdjustmentsViewModel.stopDailyChecking()
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .priceAdjustmentFound)) { notification in
+                // Handle price adjustment found notification
+                if let userInfo = notification.userInfo,
+                   let count = userInfo["count"] as? Int,
+                   let totalSavings = userInfo["totalSavings"] as? Double {
+                    
+                    // Send basic notification using UNUserNotificationCenter directly
+                    sendPriceAdjustmentNotification(count: count, totalSavings: totalSavings)
+                }
+            }
         }
     }
     
     private func setupNotifications() {
+        // TODO: Re-enable when notification manager is accessible
         // Update notification permission status
         // notificationManager.updatePermissionStatus()
         
@@ -146,5 +171,28 @@ struct PriceAdjustProApp: App {
         UNUserNotificationCenter.current().removeAllDeliveredNotifications()
         
         AppLogger.logDataOperation("Notification badge cleared", success: true)
+    }
+    
+    private func sendPriceAdjustmentNotification(count: Int, totalSavings: Double) {
+        let content = UNMutableNotificationContent()
+        content.title = "💰 Price Adjustments Available!"
+        content.body = "You have \(count) new price adjustments worth $\(String(format: "%.2f", totalSavings))"
+        content.badge = 1
+        content.sound = .default
+        
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+        let request = UNNotificationRequest(
+            identifier: "price-adjustment-\(Date().timeIntervalSince1970)",
+            content: content,
+            trigger: trigger
+        )
+        
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                AppLogger.logError(error, context: "Price adjustment notification")
+            } else {
+                AppLogger.logDataOperation("Price adjustment notification sent: \(count) adjustments worth $\(String(format: "%.2f", totalSavings))", success: true)
+            }
+        }
     }
 } 

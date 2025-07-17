@@ -248,7 +248,7 @@ struct SettingsView: View {
                     // Support
                     Section(header: Text("Support")
                         .foregroundColor(themeManager.secondaryTextColor)) {
-                        Link(destination: URL(string: "https://priceadjustpro.onrender.com/help")!) {
+                        Link(destination: URL(string: "mailto:support@priceadjustpro.com")!) {
                             SettingsRow(
                                 icon: "questionmark.circle.fill",
                                 title: "Help Center",
@@ -256,7 +256,7 @@ struct SettingsView: View {
                             )
                         }
                         
-                        Link(destination: URL(string: "https://priceadjustpro.onrender.com/privacy")!) {
+                        Link(destination: URL(string: "https://priceadjustpro.com/privacy-policy")!) {
                             SettingsRow(
                                 icon: "hand.raised.fill",
                                 title: "Privacy Policy",
@@ -264,7 +264,7 @@ struct SettingsView: View {
                             )
                         }
                         
-                        Link(destination: URL(string: "https://priceadjustpro.onrender.com/terms")!) {
+                        Link(destination: URL(string: "https://priceadjustpro.com/terms-of-service")!) {
                             SettingsRow(
                                 icon: "doc.text.fill",
                                 title: "Terms of Service",
@@ -339,11 +339,15 @@ struct SettingsView: View {
                     .environmentObject(themeManager)
             }
             .sheet(isPresented: $showingNotificationSettings) {
-                Text("Notification Settings")
-                    .font(.title)
-                    .foregroundColor(themeManager.primaryTextColor)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(themeManager.backgroundColor)
+                NavigationView {
+                    NotificationSettingsView()
+                        .environmentObject(themeManager)
+                        .navigationTitle("Notifications")
+                        .navigationBarTitleDisplayMode(.large)
+                        .navigationBarItems(trailing: Button("Done") {
+                            showingNotificationSettings = false
+                        })
+                }
             }
         }
     }
@@ -435,9 +439,7 @@ struct SettingsRow: View {
 
 struct NotificationSettingsView: View {
     @EnvironmentObject var themeManager: ThemeManager
-    @State private var receiptAlerts = true
-    @State private var priceDrops = true
-    @State private var weeklyReport = false
+    @State private var priceAdjustments = true
     
     var body: some View {
         ZStack {
@@ -448,28 +450,18 @@ struct NotificationSettingsView: View {
                     .foregroundColor(themeManager.secondaryTextColor)) {
                     
                     HStack {
-                        Text("Receipt Processing Alerts")
-                            .foregroundColor(themeManager.primaryTextColor)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Price Adjustment Alerts")
+                                .foregroundColor(themeManager.primaryTextColor)
+                            Text("Get notified when price adjustments are available")
+                                .font(.caption)
+                                .foregroundColor(themeManager.secondaryTextColor)
+                        }
                         Spacer()
-                        Toggle("", isOn: $receiptAlerts)
+                        Toggle("", isOn: $priceAdjustments)
                             .toggleStyle(SwitchToggleStyle(tint: themeManager.accentColor))
                     }
-                    
-                    HStack {
-                        Text("Price Drop Alerts")
-                            .foregroundColor(themeManager.primaryTextColor)
-                        Spacer()
-                        Toggle("", isOn: $priceDrops)
-                            .toggleStyle(SwitchToggleStyle(tint: themeManager.accentColor))
-                    }
-                    
-                    HStack {
-                        Text("Weekly Summary Report")
-                            .foregroundColor(themeManager.primaryTextColor)
-                        Spacer()
-                        Toggle("", isOn: $weeklyReport)
-                            .toggleStyle(SwitchToggleStyle(tint: themeManager.accentColor))
-                    }
+                    .padding(.vertical, 4)
                 }
                 .listRowBackground(themeManager.cardBackgroundColor)
             }
