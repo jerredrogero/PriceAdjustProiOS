@@ -221,6 +221,42 @@ class APIService: ObservableObject {
         return performRequest(url: url, method: "POST", body: registerData)
     }
     
+    func deleteAccount(password: String) -> AnyPublisher<Void, APIError> {
+        guard let url = URL(string: "\(baseURL)/auth/delete-account/") else {
+            return Fail(error: APIError.invalidURL)
+                .eraseToAnyPublisher()
+        }
+        
+        // Try with CSRF token first, then fallback to simpler approach
+        return ensureCSRFToken()
+            .flatMap { [weak self] csrfToken -> AnyPublisher<Void, APIError> in
+                guard let self = self else {
+                    return Fail(error: APIError.csrfError).eraseToAnyPublisher()
+                }
+                
+                return self.performDeleteWithCSRF(url: url, csrfToken: csrfToken, password: password)
+                    .catch { error -> AnyPublisher<Void, APIError> in
+                        AppLogger.logWarning("CSRF delete request failed, trying without CSRF protection", context: "API request")
+                        // If CSRF fails, try without CSRF but still include password
+                        return self.performRequest(url: url, method: "DELETE", body: DeleteAccountRequest(password: password))
+                            .map { (_: EmptyResponse) in () }
+                            .eraseToAnyPublisher()
+                    }
+                    .eraseToAnyPublisher()
+            }
+            .catch { [weak self] error -> AnyPublisher<Void, APIError> in
+                AppLogger.logWarning("CSRF token acquisition failed, trying direct delete request", context: "API request")
+                // If we can't get CSRF token at all, try direct request with password
+                guard let self = self else {
+                    return Fail(error: APIError.csrfError).eraseToAnyPublisher()
+                }
+                return self.performRequest(url: url, method: "DELETE", body: DeleteAccountRequest(password: password))
+                    .map { (_: EmptyResponse) in () }
+                    .eraseToAnyPublisher()
+            }
+            .eraseToAnyPublisher()
+    }
+    
     func refreshToken(refreshToken: String) -> AnyPublisher<APIAuthResponse, APIError> {
         guard let url = URL(string: "\(baseURL)/auth/refresh/") else {
             return Fail(error: APIError.invalidURL)
@@ -576,6 +612,54 @@ class APIService: ObservableObject {
                     return apiError
                 } else {
                     AppLogger.logError(error, context: "CSRF network request")
+                    return APIError.networkError(error)
+                }
+            }
+            .eraseToAnyPublisher()
+    }
+    
+    private func performDeleteWithCSRF(
+        url: URL,
+        csrfToken: String,
+        password: String
+    ) -> AnyPublisher<Void, APIError> {
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(csrfToken, forHTTPHeaderField: "X-CSRFToken")
+        
+        // Add Referer header as required by Django CSRF protection
+        request.setValue(baseURL, forHTTPHeaderField: "Referer")
+        
+        // Add password to request body
+        let deleteData = DeleteAccountRequest(password: password)
+        do {
+            request.httpBody = try JSONEncoder().encode(deleteData)
+        } catch {
+            return Fail(error: APIError.decodingError).eraseToAnyPublisher()
+        }
+        
+        AppLogger.apiCall("DELETE", to: url.absoluteString)
+        AppLogger.logSecurityEvent("Using CSRF token for DELETE request with password verification")
+        
+        return urlSession.dataTaskPublisher(for: request)
+            .tryMap { data, response -> Void in
+                if let httpResponse = response as? HTTPURLResponse {
+                    AppLogger.apiSuccess(httpResponse.statusCode, from: url.absoluteString)
+                    
+                    if httpResponse.statusCode >= 400 {
+                        AppLogger.logResponseData(data, from: url.absoluteString)
+                        throw APIError.serverError(httpResponse.statusCode)
+                    }
+                }
+                return ()
+            }
+            .mapError { error in
+                if let apiError = error as? APIError {
+                    AppLogger.logError(apiError, context: "CSRF DELETE request")
+                    return apiError
+                } else {
+                    AppLogger.logError(error, context: "CSRF DELETE network request")
                     return APIError.networkError(error)
                 }
             }

@@ -12,6 +12,7 @@ struct AuthenticationView: View {
     @State private var lastName = ""
     @State private var showPassword = false
     @State private var isKeyboardVisible = false
+    @State private var hasAttemptedAutoBiometric = false
     
     private var isFormValid: Bool {
         let emailValid = !email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -52,16 +53,6 @@ struct AuthenticationView: View {
             }
             .navigationBarHidden(true)
             .preferredColorScheme(themeManager.isDarkMode ? .dark : .light)
-            .alert("Enable \(biometricService.biometricTypeString)?", isPresented: $authService.shouldOfferBiometricSetup) {
-                Button("Enable") {
-                    authService.enableBiometricAuth()
-                }
-                Button("Not Now", role: .cancel) {
-                    authService.declineBiometricAuth()
-                }
-            } message: {
-                Text("Use \(biometricService.biometricTypeString) for quick and secure login to PriceAdjustPro.")
-            }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
             withAnimation(.easeInOut(duration: 0.3)) {
@@ -72,6 +63,10 @@ struct AuthenticationView: View {
             withAnimation(.easeInOut(duration: 0.3)) {
                 isKeyboardVisible = false
             }
+        }
+        .onAppear {
+            // Auto-attempt Face ID login for returning users
+            autoAttemptBiometricLogin()
         }
     }
     
@@ -239,24 +234,19 @@ struct AuthenticationView: View {
                     }
                 )
                 
-                // Biometric Authentication (Login only)
-                if !isRegistering && biometricService.isBiometricAvailable && biometricService.isBiometricEnabled {
-                    BiometricAuthButton(
-                        biometricType: biometricService.biometricTypeString,
-                        iconName: biometricIconName,
-                        action: {
-                            authService.loginWithBiometrics()
-                        }
-                    )
-                    .transition(.asymmetric(
-                        insertion: .scale.combined(with: .opacity),
-                        removal: .scale.combined(with: .opacity)
-                    ))
-                }
                 
                 // Toggle Auth Mode
                 ToggleAuthModeButton(
-                    isRegistering: $isRegistering
+                    isRegistering: $isRegistering,
+                    onModeChange: { willBeLogin in
+                        if willBeLogin {
+                            hasAttemptedAutoBiometric = false
+                            // Try biometric login again after a short delay
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                autoAttemptBiometricLogin()
+                            }
+                        }
+                    }
                 )
             }
         }
@@ -279,6 +269,28 @@ struct AuthenticationView: View {
             return "opticid"
         default:
             return "person.crop.circle.badge.checkmark"
+        }
+    }
+    
+    // MARK: - Auto Biometric Login
+    
+    private func autoAttemptBiometricLogin() {
+        // Only attempt once per session
+        guard !hasAttemptedAutoBiometric else { return }
+        
+        // Only for login mode (not registration)
+        guard !isRegistering else { return }
+        
+        // Only if Face ID is available and enabled
+        guard biometricService.isBiometricAvailable && biometricService.isBiometricEnabled else { return }
+        
+        hasAttemptedAutoBiometric = true
+        
+        AppLogger.logSecurityEvent("Auto-attempting biometric login on app launch")
+        
+        // Small delay to let the view fully render
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            authService.loginWithBiometrics()
         }
     }
 }
@@ -505,49 +517,21 @@ struct PrimaryActionButton: View {
     }
 }
 
-struct BiometricAuthButton: View {
-    let biometricType: String
-    let iconName: String
-    let action: () -> Void
-    @EnvironmentObject var themeManager: ThemeManager
-    
-    var body: some View {
-        Button(action: action) {
-            HStack {
-                Image(systemName: iconName)
-                    .font(.title3)
-                    .accessibilityHidden(true) // Decorative icon
-                
-                Text("Sign in with \(biometricType)")
-                    .fontWeight(.medium)
-            }
-            .foregroundColor(.black)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.gray.opacity(0.1))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                    )
-            )
-        }
-        .accessibilityLabel("Sign in with \(biometricType)")
-        .accessibilityHint("Uses biometric authentication to sign in")
-        .accessibilityIdentifier("biometric-auth-button")
-        .accessibilityAddTraits(.isButton)
-    }
-}
 
 struct ToggleAuthModeButton: View {
     @Binding var isRegistering: Bool
     @EnvironmentObject var themeManager: ThemeManager
+    let onModeChange: (Bool) -> Void // Callback when switching to login mode
     
     var body: some View {
         Button(action: {
             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                let willBeLogin = !isRegistering // This will be the new state
                 isRegistering.toggle()
+                // Call the callback when switching to login mode
+                if willBeLogin {
+                    onModeChange(true)
+                }
             }
         }) {
             HStack {

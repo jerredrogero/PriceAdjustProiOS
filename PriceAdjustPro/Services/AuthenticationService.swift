@@ -96,6 +96,38 @@ class AuthenticationService: ObservableObject {
         NotificationCenter.default.post(name: .userDidLogout, object: nil)
     }
     
+    func deleteAccount(password: String) {
+        isLoading = true
+        errorMessage = nil
+        
+        APIService.shared.deleteAccount(password: password)
+            .receive(on: DispatchQueue.main)
+            .sink(
+                receiveCompletion: { [weak self] completion in
+                    self?.isLoading = false
+                    if case .failure(let error) = completion {
+                        AppLogger.logError(error, context: "Account deletion")
+                        // Show more specific error message based on the error type
+                        if case .serverError(400) = error {
+                            self?.errorMessage = "Invalid password. Please enter your correct account password."
+                        } else if case .serverError(404) = error {
+                            self?.errorMessage = "Account deletion endpoint not available. Please contact support to delete your account."
+                        } else if case .serverError(let code) = error {
+                            self?.errorMessage = "Server error (\(code)). Please try again or contact support."
+                        } else {
+                            self?.errorMessage = "Failed to delete account: \(error.localizedDescription). Please contact support if this persists."
+                        }
+                    }
+                },
+                receiveValue: { [weak self] _ in
+                    // Account successfully deleted - logout and clear all data
+                    AppLogger.logDataOperation("Account deleted successfully", success: true)
+                    self?.logout()
+                }
+            )
+            .store(in: &cancellables)
+    }
+    
     func refreshAccessToken() {
         guard let refreshToken = refreshToken else {
             logout()
@@ -147,13 +179,15 @@ class AuthenticationService: ObservableObject {
             biometricSetupEmail = email
             biometricSetupPassword = password
             
+            AppLogger.logSecurityEvent("Stored session credentials for potential biometric setup: \(email)")
+            
+            // Only update stored credentials if biometric is already enabled
             Task {
                 let biometricService = BiometricAuthService.shared
-                if biometricService.isBiometricAvailable && !biometricService.isBiometricEnabled {
-                    // Ask user if they want to enable biometric auth
-                    await offerBiometricSetup(email: email, password: password)
-                } else if biometricService.isBiometricEnabled {
-                    // Update stored credentials
+                
+                if biometricService.isBiometricEnabled {
+                    // Update stored credentials for existing biometric users
+                    AppLogger.logSecurityEvent("Biometric already enabled, updating stored credentials")
                     _ = biometricService.storeCredentials(email: email, password: password)
                 }
             }
@@ -204,7 +238,6 @@ class AuthenticationService: ObservableObject {
     
     // MARK: - Biometric Authentication
     
-    @Published var shouldOfferBiometricSetup = false
     @Published var biometricSetupEmail: String?
     @Published var biometricSetupPassword: String?
     
@@ -240,47 +273,8 @@ class AuthenticationService: ObservableObject {
         }
     }
     
-    private func offerBiometricSetup(email: String, password: String) async {
-        await MainActor.run {
-            biometricSetupEmail = email
-            biometricSetupPassword = password
-            shouldOfferBiometricSetup = true
-        }
-    }
     
-    func enableBiometricAuth() {
-        guard let email = biometricSetupEmail,
-              let password = biometricSetupPassword else { 
-            AppLogger.logWarning("No stored credentials for biometric setup", context: "BiometricAuth")
-            return 
-        }
-        
-        AppLogger.logSecurityEvent("Starting biometric auth setup for user: \(email)")
-        
-        Task {
-            let biometricService = BiometricAuthService.shared
-            // Skip credential validation since user just logged in successfully
-            let success = await biometricService.setupBiometricAuth(email: email, password: password, skipValidation: true)
-            
-            await MainActor.run {
-                shouldOfferBiometricSetup = false
-                biometricSetupEmail = nil
-                biometricSetupPassword = nil
-                
-                if !success {
-                    let errorMsg = biometricService.biometricError ?? "Failed to enable biometric authentication"
-                    AppLogger.logWarning("Biometric setup failed: \(errorMsg)", context: "BiometricAuth")
-                    errorMessage = errorMsg
-                }
-            }
-        }
-    }
     
-    func declineBiometricAuth() {
-        shouldOfferBiometricSetup = false
-        biometricSetupEmail = nil
-        biometricSetupPassword = nil
-    }
 }
 
 // MARK: - Keychain Extension
@@ -323,16 +317,23 @@ class BiometricAuthService: ObservableObject {
         let context = LAContext()
         var error: NSError?
         
+        AppLogger.logSecurityEvent("Checking biometric availability...")
+        
         if context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) {
             biometricType = context.biometryType
+            AppLogger.logSecurityEvent("Biometric available: \(biometricTypeString) (type: \(biometricType.rawValue))")
         } else {
             biometricType = .none
-            biometricError = error?.localizedDescription
+            let errorDescription = error?.localizedDescription ?? "Unknown error"
+            biometricError = errorDescription
+            AppLogger.logWarning("Biometric not available: \(errorDescription)", context: "BiometricAuth")
         }
     }
     
     var isBiometricAvailable: Bool {
-        return biometricType != .none
+        let available = biometricType != .none
+        AppLogger.logSecurityEvent("isBiometricAvailable called - type: \(biometricType.rawValue), available: \(available)")
+        return available
     }
     
     var biometricTypeString: String {
@@ -352,6 +353,7 @@ class BiometricAuthService: ObservableObject {
     
     private func loadBiometricPreference() {
         isBiometricEnabled = userDefaults.bool(forKey: biometricEnabledKey)
+        AppLogger.logSecurityEvent("Loaded biometric preference - enabled: \(isBiometricEnabled)")
     }
     
     func setBiometricEnabled(_ enabled: Bool) {
@@ -458,12 +460,17 @@ class BiometricAuthService: ObservableObject {
     }
     
     func setupBiometricAuth(email: String, password: String, skipValidation: Bool = false) async -> Bool {
+        AppLogger.logSecurityEvent("setupBiometricAuth called for: \(email), skipValidation: \(skipValidation)")
+        
         guard isBiometricAvailable else {
+            AppLogger.logWarning("Biometric not available: \(biometricType)", context: "BiometricAuth")
             await MainActor.run {
                 biometricError = "Biometric authentication is not available on this device"
             }
             return false
         }
+        
+        AppLogger.logSecurityEvent("Biometric available: \(biometricTypeString)")
         
         // Skip credential validation if called from post-login flow
         if !skipValidation {
@@ -472,6 +479,7 @@ class BiometricAuthService: ObservableObject {
             let isValidCredentials = await validateCredentials(email: email, password: password)
             
             if !isValidCredentials {
+                AppLogger.logWarning("Credential validation failed for biometric setup", context: "BiometricAuth")
                 await MainActor.run {
                     biometricError = "Invalid password. Please enter your correct account password."
                 }
@@ -482,30 +490,68 @@ class BiometricAuthService: ObservableObject {
         }
         
         do {
+            AppLogger.logSecurityEvent("Requesting biometric authentication for setup")
             let success = try await authenticateWithBiometrics(
                 reason: "Enable \(biometricTypeString) for quick and secure login"
             )
             
+            AppLogger.logSecurityEvent("Biometric authentication result: \(success)")
+            
             if success {
+                AppLogger.logSecurityEvent("Attempting to store credentials in keychain")
                 let stored = storeCredentials(email: email, password: password, isInitialSetup: true)
+                AppLogger.logSecurityEvent("Credential storage result: \(stored)")
+                
                 if stored {
-                    setBiometricEnabled(true)
-                    AppLogger.logSecurityEvent("Biometric authentication setup completed")
+                    await MainActor.run {
+                        setBiometricEnabled(true)
+                    }
+                    AppLogger.logSecurityEvent("Biometric authentication setup completed successfully")
                     return true
                 } else {
+                    AppLogger.logError(BiometricError.keychainStorageFailed, context: "Failed to store credentials in keychain")
                     await MainActor.run {
-                        biometricError = "Failed to securely store credentials"
+                        biometricError = "Failed to securely store credentials in keychain"
                     }
                     return false
                 }
             } else {
+                AppLogger.logWarning("User cancelled biometric authentication setup", context: "BiometricAuth")
+                await MainActor.run {
+                    biometricError = "Biometric authentication setup was cancelled"
+                }
                 return false
             }
+        } catch let error as LAError {
+            // Handle specific LocalAuthentication errors
+            let errorMessage: String
+            switch error.code {
+            case .userCancel:
+                errorMessage = "Setup was cancelled"
+            case .userFallback:
+                errorMessage = "User chose to use passcode instead"
+            case .systemCancel:
+                errorMessage = "System cancelled the setup"
+            case .biometryNotAvailable:
+                errorMessage = "\(biometricTypeString) is not available"
+            case .biometryNotEnrolled:
+                errorMessage = "\(biometricTypeString) is not set up. Please set it up in Settings first."
+            case .biometryLockout:
+                errorMessage = "\(biometricTypeString) is locked. Please unlock it in Settings."
+            default:
+                errorMessage = error.localizedDescription
+            }
+            
+            AppLogger.logError(error, context: "Biometric authentication setup failed with LA error: \(error.code.rawValue)")
+            await MainActor.run {
+                biometricError = errorMessage
+            }
+            return false
         } catch {
+            AppLogger.logError(error, context: "Biometric authentication setup failed with unknown error")
             await MainActor.run {
                 biometricError = error.localizedDescription
             }
-            AppLogger.logError(error, context: "Setup biometric auth")
             return false
         }
     }

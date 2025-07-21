@@ -12,8 +12,11 @@ struct SettingsView: View {
     @State private var showingLogoutAlert = false
     @State private var showingNotificationSettings = false
     @State private var showingBiometricSetup = false
-    @State private var biometricSetupEmail = ""
-    @State private var biometricSetupPassword = ""
+    @State private var settingsBiometricSetupEmail = ""
+    @State private var settingsBiometricSetupPassword = ""
+    @State private var showingDeleteAccountAlert = false
+    @State private var showingDeleteAccountError = false
+    @State private var deleteAccountPassword = ""
     
     var body: some View {
         NavigationView {
@@ -111,7 +114,9 @@ struct SettingsView: View {
                         // Upgrade Button for Free Users
                         if accountService.isFreeUser {
                             Button(action: {
-                                accountService.showUpgradePrompt = true
+                                if let url = URL(string: "https://priceadjustpro.com/subscription") {
+                                    UIApplication.shared.open(url)
+                                }
                             }) {
                                 HStack {
                                     Image(systemName: "arrow.up.circle.fill")
@@ -290,6 +295,31 @@ struct SettingsView: View {
                     }
                     .listRowBackground(themeManager.cardBackgroundColor)
                     
+                    // Account Deletion
+                    Section {
+                        Button(action: {
+                            showingDeleteAccountAlert = true
+                        }) {
+                            HStack {
+                                Spacer()
+                                if authService.isLoading {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .red))
+                                        .scaleEffect(0.8)
+                                    Text("Deleting Account...")
+                                        .foregroundColor(.red)
+                                        .fontWeight(.medium)
+                                } else {
+                                    Text("Delete Account")
+                                        .foregroundColor(.red)
+                                        .fontWeight(.medium)
+                                }
+                                Spacer()
+                            }
+                        }
+                        .disabled(authService.isLoading)
+                    }
+                    .listRowBackground(themeManager.cardBackgroundColor)
                     
                     // Logout
                     Section {
@@ -329,6 +359,31 @@ struct SettingsView: View {
                 }
             } message: {
                 Text("Are you sure you want to log out?")
+            }
+            .alert("Delete Account", isPresented: $showingDeleteAccountAlert) {
+                SecureField("Enter your password", text: $deleteAccountPassword)
+                Button("Cancel", role: .cancel) {
+                    deleteAccountPassword = ""
+                }
+                Button("Delete Account", role: .destructive) {
+                    authService.deleteAccount(password: deleteAccountPassword)
+                    deleteAccountPassword = ""
+                }
+                .disabled(deleteAccountPassword.isEmpty)
+            } message: {
+                Text("This action will permanently delete your account and all associated data. Enter your password to confirm. This cannot be undone.")
+            }
+            .alert("Account Deletion Failed", isPresented: $showingDeleteAccountError) {
+                Button("OK", role: .cancel) {
+                    authService.clearError()
+                }
+            } message: {
+                Text(authService.errorMessage ?? "An unknown error occurred while trying to delete your account.")
+            }
+            .onChange(of: authService.errorMessage) { errorMessage in
+                if errorMessage != nil && !authService.isLoading {
+                    showingDeleteAccountError = true
+                }
             }
             .sheet(isPresented: $showingEditProfile) {
                 EditProfileView()

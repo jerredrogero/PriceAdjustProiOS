@@ -114,4 +114,12 @@ struct RegisterRequest: Codable {
 
 struct RefreshTokenRequest: Codable {
     let refresh: String
+}
+
+struct DeleteAccountRequest: Codable {
+    let password: String
+}
+
+struct EmptyResponse: Codable {
+    // Empty struct for endpoints that return no data
 } 

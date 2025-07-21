@@ -204,7 +204,9 @@ struct AddReceiptView: View {
                         .multilineTextAlignment(.center)
                     
                     Button("Upgrade Now") {
-                        accountService.showUpgradePrompt = true
+                        if let url = URL(string: "https://priceadjustpro.com/subscription") {
+                            UIApplication.shared.open(url)
+                        }
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.regular)
@@ -360,7 +362,9 @@ struct AddReceiptView: View {
                 
                 if accountService.hasReachedReceiptLimit {
                     Button("Upgrade") {
-                        accountService.showUpgradePrompt = true
+                        if let url = URL(string: "https://priceadjustpro.com/subscription") {
+                            UIApplication.shared.open(url)
+                        }
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.small)
