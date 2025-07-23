@@ -111,38 +111,33 @@ struct SettingsView: View {
                         }
                         .padding(.vertical, 8)
                         
-                        // Upgrade Button for Free Users
+                        // Premium Features Info for Free Users
                         if accountService.isFreeUser {
-                            Button(action: {
-                                if let url = URL(string: "https://priceadjustpro.com/subscription") {
-                                    UIApplication.shared.open(url)
-                                }
-                            }) {
+                            VStack(alignment: .leading, spacing: 8) {
                                 HStack {
-                                    Image(systemName: "arrow.up.circle.fill")
-                                        .foregroundColor(.white)
+                                    Image(systemName: "info.circle.fill")
+                                        .foregroundColor(themeManager.accentColor)
                                     
-                                    Text("Upgrade to Premium")
+                                    Text("Premium Features Available")
                                         .font(.subheadline)
                                         .fontWeight(.semibold)
-                                        .foregroundColor(.white)
-                                    
-                                    Spacer()
-                                    
-                                    Image(systemName: "chevron.right")
-                                        .foregroundColor(.white)
-                                        .font(.caption)
+                                        .foregroundColor(themeManager.primaryTextColor)
                                 }
-                                .padding()
-                                .background(
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [themeManager.accentColor, themeManager.accentColor.opacity(0.8)]),
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .cornerRadius(12)
+                                
+                                Text("Unlimited receipt uploads, advanced analytics, and more features are available. Manage your subscription at priceadjustpro.com")
+                                    .font(.caption)
+                                    .foregroundColor(themeManager.secondaryTextColor)
+                                    .multilineTextAlignment(.leading)
                             }
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(themeManager.accentColor.opacity(0.1))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(themeManager.accentColor.opacity(0.3), lineWidth: 1)
+                                    )
+                            )
                             .padding(.vertical, 4)
                         }
                     }

@@ -198,18 +198,10 @@ struct AddReceiptView: View {
                         .font(.headline)
                         .foregroundColor(themeManager.errorColor)
                     
-                    Text("Upgrade to Premium for unlimited receipt uploads")
+                    Text("You've reached your receipt upload limit. Premium subscriptions with unlimited uploads are available at priceadjustpro.com")
                         .font(.subheadline)
                         .foregroundColor(themeManager.secondaryTextColor)
                         .multilineTextAlignment(.center)
-                    
-                    Button("Upgrade Now") {
-                        if let url = URL(string: "https://priceadjustpro.com/subscription") {
-                            UIApplication.shared.open(url)
-                        }
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.regular)
                 }
                 .padding()
                 .background(themeManager.errorColor.opacity(0.1))
@@ -361,13 +353,9 @@ struct AddReceiptView: View {
                 Spacer()
                 
                 if accountService.hasReachedReceiptLimit {
-                    Button("Upgrade") {
-                        if let url = URL(string: "https://priceadjustpro.com/subscription") {
-                            UIApplication.shared.open(url)
-                        }
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
+                    Text("Premium Available")
+                        .font(.caption)
+                        .foregroundColor(themeManager.secondaryTextColor)
                 }
             }
             
