@@ -22,13 +22,17 @@ struct ContentView: View {
     
     var body: some View {
         Group {
-            if authService.isAuthenticated {
+            if authService.needsEmailVerification {
+                // Show email verification screen
+                EmailVerificationView(userEmail: authService.pendingVerificationEmail ?? "")
+            } else if authService.isAuthenticated {
                 MainTabView(selectedTab: $selectedTab)
             } else {
                 AuthenticationView()
             }
         }
         .animation(.easeInOut, value: authService.isAuthenticated)
+        .animation(.easeInOut, value: authService.needsEmailVerification)
         .onAppear {
             // Clear old receipts and sync fresh from server if user is authenticated
             if authService.isAuthenticated {

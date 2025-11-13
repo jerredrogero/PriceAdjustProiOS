@@ -20,6 +20,7 @@
 		3C0A1E4B2C8A123500000001 /* ReceiptModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E4C2C8A123500000001 /* ReceiptModels.swift */; };
 		3C0A1E4D2C8A123500000001 /* APIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E4E2C8A123500000001 /* APIService.swift */; };
 		3C0A1E4F2C8A123500000001 /* AuthenticationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E502C8A123500000001 /* AuthenticationView.swift */; };
+		3C0A1E7E2C8A123500000002 /* EmailVerificationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E7F2C8A123500000002 /* EmailVerificationView.swift */; };
 		3C0A1E512C8A123500000001 /* ReceiptListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E522C8A123500000001 /* ReceiptListView.swift */; };
 		3C0A1E532C8A123500000001 /* AddReceiptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E542C8A123500000001 /* AddReceiptView.swift */; };
 		3C0A1E552C8A123500000001 /* AnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E562C8A123500000001 /* AnalyticsView.swift */; };
@@ -33,6 +34,9 @@
 		3C0A1E6B2C8A123500000001 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E6C2C8A123500000001 /* SettingsView.swift */; };
 		3C0A1E702C8A123500000001 /* EditReceiptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E712C8A123500000001 /* EditReceiptView.swift */; };
 		3C0A1E722C8A123500000001 /* AccountService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E732C8A123500000001 /* AccountService.swift */; };
+		C83D3C860BE942169D99D38B /* StoreKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F76F4613AD4E4DFE9EF58F4E /* StoreKitService.swift */; };
+		52A2AFBDCBCF44C9A822A790 /* SubscriptionSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7814FA42D55412682217469 /* SubscriptionSyncService.swift */; };
+		497B8FA332CE4D67B23372BF /* SubscriptionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B34869994D904BCC9D5689CF /* SubscriptionView.swift */; };
 		D6E4A92BF6A6D9C180D8FBF6 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6E4A92BF6A6D9C180D8FBF7 /* SplashView.swift */; };
 /* End PBXBuildFile section */
 
@@ -51,6 +55,7 @@
 		3C0A1E4C2C8A123500000001 /* ReceiptModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiptModels.swift; sourceTree = "<group>"; };
 		3C0A1E4E2C8A123500000001 /* APIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIService.swift; sourceTree = "<group>"; };
 		3C0A1E502C8A123500000001 /* AuthenticationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationView.swift; sourceTree = "<group>"; };
+		3C0A1E7F2C8A123500000002 /* EmailVerificationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailVerificationView.swift; sourceTree = "<group>"; };
 		3C0A1E522C8A123500000001 /* ReceiptListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiptListView.swift; sourceTree = "<group>"; };
 		3C0A1E542C8A123500000001 /* AddReceiptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddReceiptView.swift; sourceTree = "<group>"; };
 		3C0A1E562C8A123500000001 /* AnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsView.swift; sourceTree = "<group>"; };
@@ -64,6 +69,9 @@
 		3C0A1E6C2C8A123500000001 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		3C0A1E712C8A123500000001 /* EditReceiptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditReceiptView.swift; sourceTree = "<group>"; };
 		3C0A1E732C8A123500000001 /* AccountService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountService.swift; sourceTree = "<group>"; };
+		F76F4613AD4E4DFE9EF58F4E /* StoreKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitService.swift; sourceTree = "<group>"; };
+		C7814FA42D55412682217469 /* SubscriptionSyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionSyncService.swift; sourceTree = "<group>"; };
+		B34869994D904BCC9D5689CF /* SubscriptionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionView.swift; sourceTree = "<group>"; };
 		D6E4A92BF6A6D9C180D8FBF7 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -173,6 +181,8 @@
 				3C0A1E5E2C8A123500000001 /* PDFService.swift */,
 				3C0A1E6A2C8A123500000001 /* ThemeManager.swift */,
 				3C0A1E732C8A123500000001 /* AccountService.swift */,
+				F76F4613AD4E4DFE9EF58F4E /* StoreKitService.swift */,
+				C7814FA42D55412682217469 /* SubscriptionSyncService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -196,6 +206,7 @@
 			isa = PBXGroup;
 			children = (
 				3C0A1E502C8A123500000001 /* AuthenticationView.swift */,
+				3C0A1E7F2C8A123500000002 /* EmailVerificationView.swift */,
 			);
 			path = Authentication;
 			sourceTree = "<group>";
@@ -253,6 +264,7 @@
 		3C0A1E762C8A123500000001 /* Subscription */ = {
 			isa = PBXGroup;
 			children = (
+				B34869994D904BCC9D5689CF /* SubscriptionView.swift */,
 			);
 			path = Subscription;
 			sourceTree = "<group>";
@@ -340,6 +352,7 @@
 				3C0A1E4B2C8A123500000001 /* ReceiptModels.swift in Sources */,
 				3C0A1E4D2C8A123500000001 /* APIService.swift in Sources */,
 				3C0A1E4F2C8A123500000001 /* AuthenticationView.swift in Sources */,
+				3C0A1E7E2C8A123500000002 /* EmailVerificationView.swift in Sources */,
 				3C0A1E512C8A123500000001 /* ReceiptListView.swift in Sources */,
 				3C0A1E532C8A123500000001 /* AddReceiptView.swift in Sources */,
 				3C0A1E702C8A123500000001 /* EditReceiptView.swift in Sources */,
@@ -353,6 +366,9 @@
 				3C0A1E632C8A123500000001 /* OnSaleView.swift in Sources */,
 				3C0A1E652C8A123500000001 /* OnSaleViewModel.swift in Sources */,
 				3C0A1E722C8A123500000001 /* AccountService.swift in Sources */,
+				C83D3C860BE942169D99D38B /* StoreKitService.swift in Sources */,
+				52A2AFBDCBCF44C9A822A790 /* SubscriptionSyncService.swift in Sources */,
+				497B8FA332CE4D67B23372BF /* SubscriptionView.swift in Sources */,
 				D6E4A92BF6A6D9C180D8FBF6 /* SplashView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

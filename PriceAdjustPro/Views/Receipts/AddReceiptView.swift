@@ -20,6 +20,7 @@ struct AddReceiptView: View {
     @State private var errorMessage: String?
     @State private var uploadSuccessMessage: String?
     @State private var showingSuccessAlert = false
+    @State private var showingSubscription = false
 
     
     var body: some View {
@@ -42,6 +43,11 @@ struct AddReceiptView: View {
         }
         .sheet(isPresented: $showingDocumentPicker) {
             DocumentPicker(selectedPDF: $selectedPDF)
+        }
+        .sheet(isPresented: $showingSubscription) {
+            SubscriptionView()
+                .environmentObject(themeManager)
+                .environmentObject(accountService)
         }
         .onChange(of: selectedImage) { newImage in
             print("📷 onChange triggered for selectedImage: \(newImage != nil ? "Image selected" : "Image cleared")")
@@ -198,10 +204,20 @@ struct AddReceiptView: View {
                         .font(.headline)
                         .foregroundColor(themeManager.errorColor)
                     
-                    Text("You've reached your receipt upload limit. Premium subscriptions with unlimited uploads are available at priceadjustpro.com")
+                    Text("You've reached your receipt upload limit. Upgrade to Premium for unlimited uploads and advanced features.")
                         .font(.subheadline)
                         .foregroundColor(themeManager.secondaryTextColor)
                         .multilineTextAlignment(.center)
+                    
+                    Button("Upgrade to Premium") {
+                        showingSubscription = true
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 8)
+                    .background(themeManager.accentColor)
+                    .cornerRadius(8)
                 }
                 .padding()
                 .background(themeManager.errorColor.opacity(0.1))

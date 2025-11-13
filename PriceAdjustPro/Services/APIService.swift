@@ -25,6 +25,7 @@ class APIService: ObservableObject {
         case networkError(Error)
         case csrfError
         case uploadSuccessButNoData
+        case subscriptionError(String)
         
         var errorDescription: String? {
             switch self {
@@ -42,6 +43,8 @@ class APIService: ObservableObject {
                 return "CSRF token error"
             case .uploadSuccessButNoData:
                 return "Upload successful"
+            case .subscriptionError(let message):
+                return "Subscription error: \(message)"
             }
         }
     }
@@ -166,6 +169,10 @@ class APIService: ObservableObject {
                         user: nil,
                         key: nil,
                         token: nil,
+                        message: nil,
+                        email: nil,
+                        username: nil,
+                        verificationRequired: nil,
                         error: errorMessage,
                         detail: nil
                     )
@@ -182,6 +189,10 @@ class APIService: ObservableObject {
                         user: userResponse,
                         key: nil,
                         token: nil,
+                        message: nil,
+                        email: nil,
+                        username: nil,
+                        verificationRequired: nil,
                         error: nil,
                         detail: nil
                     )
@@ -219,6 +230,136 @@ class APIService: ObservableObject {
         let registerData = RegisterRequest(email: email, password: password, firstName: firstName, lastName: lastName)
         
         return performRequest(url: url, method: "POST", body: registerData)
+    }
+    
+    // MARK: - Email Verification API
+    
+    func verifyEmail(code: String) -> AnyPublisher<VerifyEmailResponse, APIError> {
+        guard let url = URL(string: "\(baseURL)/auth/verify-email/") else {
+            return Fail(error: APIError.invalidURL)
+                .eraseToAnyPublisher()
+        }
+        
+        let verifyData = VerifyEmailRequest(code: code)
+        
+        AppLogger.apiCall("POST", to: url.absoluteString)
+        
+        // Try with CSRF token first, then fallback to simpler approach
+        return ensureCSRFToken()
+            .flatMap { [weak self] csrfToken -> AnyPublisher<VerifyEmailResponse, APIError> in
+                guard let self = self else {
+                    return Fail(error: APIError.csrfError).eraseToAnyPublisher()
+                }
+                
+                return self.performRequestWithCSRF(url: url, method: "POST", body: verifyData, csrfToken: csrfToken)
+                    .catch { error -> AnyPublisher<VerifyEmailResponse, APIError> in
+                        AppLogger.logWarning("CSRF verify request failed, trying without CSRF protection", context: "API request")
+                        // If CSRF fails, try without CSRF
+                        return self.performRequestWithErrorHandling(url: url, method: "POST", body: verifyData)
+                    }
+                    .eraseToAnyPublisher()
+            }
+            .catch { [weak self] error -> AnyPublisher<VerifyEmailResponse, APIError> in
+                AppLogger.logWarning("CSRF token acquisition failed for verify, trying direct request", context: "API request")
+                // If we can't get CSRF token at all, try direct request
+                guard let self = self else {
+                    return Fail(error: APIError.csrfError).eraseToAnyPublisher()
+                }
+                return self.performRequestWithErrorHandling(url: url, method: "POST", body: verifyData)
+            }
+            .eraseToAnyPublisher()
+    }
+    
+    func resendVerificationEmail(email: String) -> AnyPublisher<ResendVerificationResponse, APIError> {
+        guard let url = URL(string: "\(baseURL)/auth/resend-verification/") else {
+            return Fail(error: APIError.invalidURL)
+                .eraseToAnyPublisher()
+        }
+        
+        let resendData = ResendVerificationRequest(email: email)
+        
+        AppLogger.apiCall("POST", to: url.absoluteString)
+        
+        // Try with CSRF token first, then fallback to simpler approach
+        return ensureCSRFToken()
+            .flatMap { [weak self] csrfToken -> AnyPublisher<ResendVerificationResponse, APIError> in
+                guard let self = self else {
+                    return Fail(error: APIError.csrfError).eraseToAnyPublisher()
+                }
+                
+                return self.performRequestWithCSRF(url: url, method: "POST", body: resendData, csrfToken: csrfToken)
+                    .catch { error -> AnyPublisher<ResendVerificationResponse, APIError> in
+                        AppLogger.logWarning("CSRF resend request failed, trying without CSRF protection", context: "API request")
+                        // If CSRF fails, try without CSRF
+                        return self.performRequestWithErrorHandling(url: url, method: "POST", body: resendData)
+                    }
+                    .eraseToAnyPublisher()
+            }
+            .catch { [weak self] error -> AnyPublisher<ResendVerificationResponse, APIError> in
+                AppLogger.logWarning("CSRF token acquisition failed for resend, trying direct request", context: "API request")
+                // If we can't get CSRF token at all, try direct request
+                guard let self = self else {
+                    return Fail(error: APIError.csrfError).eraseToAnyPublisher()
+                }
+                return self.performRequestWithErrorHandling(url: url, method: "POST", body: resendData)
+            }
+            .eraseToAnyPublisher()
+    }
+    
+    // MARK: - Request with Better Error Handling
+    
+    private func performRequestWithErrorHandling<T: Codable, U: Codable>(
+        url: URL,
+        method: String,
+        body: U
+    ) -> AnyPublisher<T, APIError> {
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            request.httpBody = try JSONEncoder().encode(body)
+        } catch {
+            return Fail(error: APIError.decodingError)
+                .eraseToAnyPublisher()
+        }
+        
+        return urlSession.dataTaskPublisher(for: request)
+            .tryMap { data, response -> Data in
+                if let httpResponse = response as? HTTPURLResponse {
+                    AppLogger.apiSuccess(httpResponse.statusCode, from: url.absoluteString)
+                    
+                    // Handle HTTP errors
+                    if httpResponse.statusCode >= 400 {
+                        AppLogger.logResponseData(data, from: url.absoluteString)
+                        
+                        // Try to parse error message from response
+                        if let errorJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                           let errorMsg = errorJson["error"] as? String {
+                            AppLogger.logError(APIError.serverError(httpResponse.statusCode), context: "HTTP \(httpResponse.statusCode): \(errorMsg)")
+                        }
+                        
+                        throw APIError.serverError(httpResponse.statusCode)
+                    }
+                }
+                return data
+            }
+            .handleEvents(receiveOutput: { data in
+                AppLogger.logResponseData(data, from: url.absoluteString)
+            })
+            .decode(type: T.self, decoder: JSONDecoder())
+            .mapError { error in
+                if error is DecodingError {
+                    AppLogger.logError(error, context: "API response decoding")
+                    return APIError.decodingError
+                } else if let apiError = error as? APIError {
+                    return apiError
+                } else {
+                    AppLogger.logError(error, context: "API network request")
+                    return APIError.networkError(error)
+                }
+            }
+            .eraseToAnyPublisher()
     }
     
     func deleteAccount(password: String) -> AnyPublisher<Void, APIError> {
@@ -827,6 +968,102 @@ class APIService: ObservableObject {
             AppLogger.logError(error, context: "Upload file network request")
             throw APIError.networkError(error)
         }
+    }
+    
+    // MARK: - Apple Subscription Methods
+    
+    /// Validates an Apple receipt with the backend
+    func validateAppleReceipt(_ request: ReceiptValidationRequest) async throws -> SubscriptionStatus {
+        guard let url = URL(string: "\(baseURL)/subscriptions/apple/validate/") else {
+            throw APIError.invalidURL
+        }
+        
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        // Use session-based authentication (cookies) like the rest of the app
+        // Django session-based auth uses cookies, not Authorization headers
+        
+        do {
+            urlRequest.httpBody = try JSONEncoder().encode(request)
+        } catch {
+            throw APIError.networkError(error)
+        }
+        
+        do {
+            let (data, response) = try await urlSession.data(for: urlRequest)
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw APIError.networkError(NSError(domain: "APIService", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid response"]))
+            }
+            
+            if httpResponse.statusCode == 200 {
+                do {
+                    let subscriptionStatus = try JSONDecoder().decode(SubscriptionStatus.self, from: data)
+                    AppLogger.logDataOperation("Apple receipt validation successful", success: true)
+                    return subscriptionStatus
+                } catch {
+                    AppLogger.logError(error, context: "Decoding subscription status")
+                    throw APIError.decodingError
+                }
+            } else {
+                let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
+                AppLogger.logError(APIError.subscriptionError(errorMessage), context: "Apple receipt validation")
+                throw APIError.subscriptionError(errorMessage)
+            }
+        } catch {
+            AppLogger.logError(error, context: "Apple receipt validation network request")
+            throw APIError.networkError(error)
+        }
+    }
+    
+    /// Sends Apple purchase data to backend for processing
+    func syncApplePurchase(_ purchaseData: ApplePurchaseData) async throws {
+        guard let url = URL(string: "\(baseURL)/subscriptions/apple/purchase/") else {
+            throw APIError.invalidURL
+        }
+        
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        // Use session-based authentication (cookies) like the rest of the app
+        // Django session-based auth uses cookies, not Authorization headers
+        
+        do {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            urlRequest.httpBody = try encoder.encode(purchaseData)
+        } catch {
+            throw APIError.networkError(error)
+        }
+        
+        do {
+            let (data, response) = try await urlSession.data(for: urlRequest)
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw APIError.networkError(NSError(domain: "APIService", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid response"]))
+            }
+            
+            if httpResponse.statusCode == 200 || httpResponse.statusCode == 201 {
+                AppLogger.logDataOperation("Apple purchase sync successful", success: true)
+            } else {
+                let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
+                AppLogger.logError(APIError.subscriptionError(errorMessage), context: "Apple purchase sync")
+                throw APIError.subscriptionError(errorMessage)
+            }
+        } catch {
+            AppLogger.logError(error, context: "Apple purchase sync network request")
+            throw APIError.networkError(error)
+        }
+    }
+    
+    /// Gets current auth token for API requests
+    func getAuthToken() -> String? {
+        // This should return the stored JWT token from authentication
+        // You may need to implement this based on your current auth implementation
+        return AuthenticationService.shared.accessToken
     }
 }
 

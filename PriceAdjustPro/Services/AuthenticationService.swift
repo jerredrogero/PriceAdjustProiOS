@@ -11,10 +11,12 @@ class AuthenticationService: ObservableObject {
     @Published var currentUser: APIUserResponse?
     @Published var isLoading = false
     @Published var errorMessage: String?
+    @Published var needsEmailVerification = false
+    @Published var pendingVerificationEmail: String?
     
     private let keychain = Keychain(service: "com.priceadjustpro.ios")
     private let userDefaults = UserDefaults.standard
-    private var cancellables = Set<AnyCancellable>()
+    var cancellables = Set<AnyCancellable>()
     
     var accessToken: String? {
         return keychain["access_token"]
@@ -158,10 +160,51 @@ class AuthenticationService: ObservableObject {
             return
         }
         
+        // Handle registration response that requires verification
+        if response.needsVerification {
+            needsEmailVerification = true
+            pendingVerificationEmail = response.email ?? email ?? ""
+            
+            // Create a temporary user object for the registration
+            if let responseEmail = response.email ?? email {
+                let tempUser = APIUserResponse(
+                    id: 0, // Temporary ID
+                    username: response.username,
+                    email: responseEmail,
+                    firstName: nil,
+                    lastName: nil,
+                    accountType: "free",
+                    receiptCount: 0,
+                    receiptLimit: 5,
+                    isEmailVerified: false
+                )
+                currentUser = tempUser
+            }
+            
+            AppLogger.logSecurityEvent("Registration successful, email verification required for: \(response.email ?? email ?? "unknown")")
+            isAuthenticated = false
+            isLoading = false
+            return
+        }
+        
         // Check if we have a valid user (which indicates successful auth even without tokens)
         guard let user = response.user else {
             errorMessage = "Invalid authentication response"
             print("Login failed: No user data received")
+            return
+        }
+        
+        // Check if email verification is needed (for login with unverified account)
+        if user.isEmailVerified == false && password != nil {
+            // User logged in but hasn't verified email yet
+            needsEmailVerification = true
+            pendingVerificationEmail = user.email
+            AppLogger.logSecurityEvent("Login successful but email not verified for: \(user.email)")
+            
+            // Store user temporarily but don't fully authenticate
+            currentUser = user
+            isAuthenticated = false
+            isLoading = false
             return
         }
         
@@ -234,6 +277,42 @@ class AuthenticationService: ObservableObject {
     
     func clearError() {
         errorMessage = nil
+    }
+    
+    // MARK: - Email Verification
+    
+    func updateUserVerificationStatus(user: APIUserResponse) {
+        currentUser = user
+        AppLogger.logSecurityEvent("User verification status updated: \(user.email) - verified: \(user.isEmailVerified ?? false)")
+    }
+    
+    func completeEmailVerification() {
+        // Mark as fully authenticated after email verification
+        needsEmailVerification = false
+        pendingVerificationEmail = nil
+        isAuthenticated = true
+        
+        AppLogger.logSecurityEvent("Email verification completed successfully")
+        
+        // Notify about successful authentication
+        if let user = currentUser {
+            NotificationCenter.default.post(name: .userDidAuthenticate, object: user)
+        }
+    }
+    
+    func skipEmailVerification() {
+        // Allow user to continue with limited access
+        // They can still verify later from settings
+        needsEmailVerification = false
+        pendingVerificationEmail = nil
+        isAuthenticated = true
+        
+        AppLogger.logWarning("User skipped email verification", context: "Authentication")
+        
+        // Notify about authentication (with unverified status)
+        if let user = currentUser {
+            NotificationCenter.default.post(name: .userDidAuthenticate, object: user)
+        }
     }
     
     // MARK: - Biometric Authentication

@@ -88,6 +88,7 @@ struct PriceAdjustProApp: App {
     @StateObject private var accountService = AccountService.shared
     // @StateObject private var notificationManager = NotificationManager.shared
     @StateObject private var priceAdjustmentsViewModel = PriceAdjustmentsViewModel()
+    @StateObject private var storeKitService = StoreKitService.shared
     @State private var showSplash = true
     
     var body: some Scene {
@@ -105,6 +106,7 @@ struct PriceAdjustProApp: App {
                         .environmentObject(accountService)
                         // .environmentObject(notificationManager)
                         .environmentObject(priceAdjustmentsViewModel)
+                        .environmentObject(storeKitService)
                         .preferredColorScheme(themeManager.colorScheme)
                 }
             }

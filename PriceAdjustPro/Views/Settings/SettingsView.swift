@@ -17,6 +17,7 @@ struct SettingsView: View {
     @State private var showingDeleteAccountAlert = false
     @State private var showingDeleteAccountError = false
     @State private var deleteAccountPassword = ""
+    @State private var showingSubscription = false
     
     var body: some View {
         NavigationView {
@@ -33,8 +34,7 @@ struct SettingsView: View {
                                     .foregroundColor(themeManager.accentColor)
                                 
                                 Text(displayName(for: user))
-                                    .font(.title2)
-                                    .fontWeight(.semibold)
+                                    .font(.title2.weight(.semibold))
                                     .foregroundColor(themeManager.primaryTextColor)
                                 
                                 Text(user.email)
@@ -47,8 +47,7 @@ struct SettingsView: View {
                                         .foregroundColor(accountService.isPaidUser ? .yellow : .gray)
                                     
                                     Text(accountService.accountTypeDisplayName)
-                                        .font(.caption)
-                                        .fontWeight(.semibold)
+                                        .font(.caption.weight(.semibold))
                                         .foregroundColor(accountService.isPaidUser ? .yellow : .gray)
                                 }
                                 .padding(.horizontal, 12)
@@ -113,32 +112,42 @@ struct SettingsView: View {
                         
                         // Premium Features Info for Free Users
                         if accountService.isFreeUser {
-                            VStack(alignment: .leading, spacing: 8) {
-                                HStack {
-                                    Image(systemName: "info.circle.fill")
-                                        .foregroundColor(themeManager.accentColor)
+                            Button(action: {
+                                showingSubscription = true
+                            }) {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    HStack {
+                                        Image(systemName: "info.circle.fill")
+                                            .foregroundColor(themeManager.accentColor)
+                                        
+                                        Text("Premium Features Available")
+                                            .font(.subheadline.weight(.semibold))
+                                            .foregroundColor(themeManager.primaryTextColor)
+                                        
+                                        Spacer()
+                                        
+                                        Image(systemName: "chevron.right")
+                                            .foregroundColor(themeManager.accentColor)
+                                            .font(.caption)
+                                    }
                                     
-                                    Text("Premium Features Available")
-                                        .font(.subheadline)
-                                        .fontWeight(.semibold)
-                                        .foregroundColor(themeManager.primaryTextColor)
+                                    Text("Unlimited receipt uploads, advanced analytics, and more features are available. Tap to upgrade to Premium.")
+                                        .font(.caption)
+                                        .foregroundColor(themeManager.secondaryTextColor)
+                                        .multilineTextAlignment(.leading)
                                 }
-                                
-                                Text("Unlimited receipt uploads, advanced analytics, and more features are available. Manage your subscription at priceadjustpro.com")
-                                    .font(.caption)
-                                    .foregroundColor(themeManager.secondaryTextColor)
-                                    .multilineTextAlignment(.leading)
+                                .padding()
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(themeManager.accentColor.opacity(0.1))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(themeManager.accentColor.opacity(0.3), lineWidth: 1)
+                                        )
+                                )
+                                .padding(.vertical, 4)
                             }
-                            .padding()
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(themeManager.accentColor.opacity(0.1))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(themeManager.accentColor.opacity(0.3), lineWidth: 1)
-                                    )
-                            )
-                            .padding(.vertical, 4)
+                            .buttonStyle(PlainButtonStyle())
                         }
                     }
                     .listRowBackground(themeManager.cardBackgroundColor)
@@ -303,11 +312,11 @@ struct SettingsView: View {
                                         .scaleEffect(0.8)
                                     Text("Deleting Account...")
                                         .foregroundColor(.red)
-                                        .fontWeight(.medium)
+                                        .font(.body.weight(.medium))
                                 } else {
                                     Text("Delete Account")
                                         .foregroundColor(.red)
-                                        .fontWeight(.medium)
+                                        .font(.body.weight(.medium))
                                 }
                                 Spacer()
                             }
@@ -398,6 +407,11 @@ struct SettingsView: View {
                             showingNotificationSettings = false
                         })
                 }
+            }
+            .sheet(isPresented: $showingSubscription) {
+                SubscriptionView()
+                    .environmentObject(themeManager)
+                    .environmentObject(accountService)
             }
         }
     }
