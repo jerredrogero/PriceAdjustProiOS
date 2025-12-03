@@ -6,12 +6,13 @@ struct AnalyticsView: View {
     @EnvironmentObject var receiptStore: ReceiptStore
     @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var accountService: AccountService
-    @State private var selectedTimeFrame: TimeFrame = .month
+    @State private var selectedTimeFrame: TimeFrame = .all
     @State private var showingSettings = false
     @State private var showingUpload = false
     @State private var navigateToAdjustments = false
     @State private var navigateToOnSale = false
     @State private var navigateToReceipts = false
+    @State private var navigateToSpendingAnalytics = false
     
     enum TimeFrame: String, CaseIterable {
         case week = "Week"
@@ -35,6 +36,16 @@ struct AnalyticsView: View {
     
     private var averageReceipt: Double {
         receiptStore.getAverageReceiptAmount(for: currentDateInterval)
+    }
+    
+    private var totalItems: Int {
+        let filteredReceipts = receiptStore.receipts.filter { receipt in
+            if let period = currentDateInterval {
+                return period.contains(receipt.date ?? Date())
+            }
+            return true
+        }
+        return filteredReceipts.reduce(0) { $0 + $1.lineItemsArray.count }
     }
     
     private var topCategories: [String: Double] {
@@ -64,26 +75,6 @@ struct AnalyticsView: View {
         return storeData
     }
     
-    private var potentialSavings: Double {
-        // Estimate potential savings from high-priced items that might have alternatives
-        let filteredReceipts = receiptStore.receipts.filter { receipt in
-            if let period = currentDateInterval {
-                return period.contains(receipt.date ?? Date())
-            }
-            return true
-        }
-        
-        var potentialSavings = 0.0
-        for receipt in filteredReceipts {
-            for item in receipt.lineItemsArray {
-                // Items over $50 might have better alternatives or bulk discounts
-                if item.price > 50.0 {
-                    potentialSavings += item.price * 0.15 // Estimate 15% potential savings
-                }
-            }
-        }
-        return potentialSavings
-    }
     
     private var weeklyTrend: String {
         let calendar = Calendar.current
@@ -136,6 +127,7 @@ struct AnalyticsView: View {
                         NavigationLink(destination: ReceiptListView(), isActive: $navigateToReceipts) { EmptyView() }
                         NavigationLink(destination: PriceAdjustmentsView(), isActive: $navigateToAdjustments) { EmptyView() }
                         NavigationLink(destination: OnSaleView(), isActive: $navigateToOnSale) { EmptyView() }
+                        NavigationLink(destination: SpendingAnalyticsView(), isActive: $navigateToSpendingAnalytics) { EmptyView() }
                     }
                 )
         }
@@ -172,9 +164,6 @@ struct AnalyticsView: View {
                     
                     // Enhanced Insights
                     insightsSection
-                    
-                    // Price Adjustment Opportunities
-                    priceAdjustmentSection
                     
                     // Categories and Trends
                     categoriesSection
@@ -290,6 +279,16 @@ struct AnalyticsView: View {
     // MARK: - Analytics Cards Section
     private var analyticsCardsSection: some View {
         VStack(spacing: 16) {
+            // Tap hint
+            HStack {
+                Text("Tap cards for detailed analytics")
+                    .font(.caption)
+                    .foregroundColor(themeManager.secondaryTextColor)
+                
+                Spacer()
+            }
+            .padding(.horizontal, 4)
+            
             // Main stats row
             HStack(spacing: 16) {
                 ModernStatCard(
@@ -297,7 +296,8 @@ struct AnalyticsView: View {
                     value: String(format: "$%.2f", totalSpent),
                     icon: "dollarsign.circle.fill",
                     gradient: [.costcoRed, .costcoRed.opacity(0.7)],
-                    subtitle: weeklyTrend
+                    subtitle: weeklyTrend,
+                    onTap: { navigateToSpendingAnalytics = true }
                 )
                 
                 ModernStatCard(
@@ -305,26 +305,29 @@ struct AnalyticsView: View {
                     value: "\(receiptCount)",
                     icon: "receipt.fill",
                     gradient: [.green, .green.opacity(0.7)],
-                    subtitle: receiptCount > 0 ? "Tracked" : "None yet"
+                    subtitle: receiptCount > 0 ? "Tracked" : "None yet",
+                    onTap: { navigateToReceipts = true }
                 )
             }
             
-            // Average and potential savings row
+            // Average receipt row
             HStack(spacing: 16) {
                 ModernStatCard(
                     title: "Avg Receipt",
                     value: String(format: "$%.2f", averageReceipt),
                     icon: "chart.bar.fill",
                     gradient: [.orange, .orange.opacity(0.7)],
-                    subtitle: "Per visit"
+                    subtitle: "Per visit",
+                    onTap: { navigateToSpendingAnalytics = true }
                 )
                 
                 ModernStatCard(
-                    title: "Potential Savings",
-                    value: String(format: "$%.0f", potentialSavings),
-                    icon: "arrow.down.circle.fill",
+                    title: "Items",
+                    value: "\(totalItems)",
+                    icon: "cart.fill",
                     gradient: [.purple, .purple.opacity(0.7)],
-                    subtitle: "Available"
+                    subtitle: "Purchased",
+                    onTap: { navigateToSpendingAnalytics = true }
                 )
             }
         }
@@ -369,32 +372,6 @@ struct AnalyticsView: View {
         }
     }
     
-    // MARK: - Price Adjustment Section
-    private var priceAdjustmentSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text("Price Adjustment Opportunities")
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(themeManager.primaryTextColor)
-                
-                Spacer()
-                
-                                 Button("View All") {
-                     navigateToAdjustments = true
-                 }
-                .font(.subheadline)
-                .foregroundColor(themeManager.accentColor)
-            }
-            .padding(.horizontal, 4)
-            
-            PriceAdjustmentOpportunityCard(
-                potentialSavings: potentialSavings,
-                recentPurchases: receiptCount,
-                onCheckAdjustments: { navigateToAdjustments = true }
-            )
-        }
-    }
     
     // MARK: - Categories Section
     private var categoriesSection: some View {
@@ -484,43 +461,66 @@ struct ModernStatCard: View {
     let icon: String
     let gradient: [Color]
     let subtitle: String
+    var onTap: (() -> Void)? = nil
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: icon)
-                    .font(.title2)
-                    .foregroundColor(.white)
+        Button(action: {
+            onTap?()
+        }) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Image(systemName: icon)
+                        .font(.title2)
+                        .foregroundColor(.white)
+                    
+                    Spacer()
+                    
+                    HStack(spacing: 4) {
+                        Text(subtitle)
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.8))
+                        
+                        if onTap != nil {
+                            Image(systemName: "chevron.right")
+                                .font(.caption2)
+                                .foregroundColor(.white.opacity(0.6))
+                        }
+                    }
+                }
                 
-                Spacer()
-                
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundColor(.white.opacity(0.8))
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.subheadline)
+                        .foregroundColor(.white.opacity(0.9))
+                    
+                    Text(value)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                }
             }
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.9))
-                
-                Text(value)
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
-            }
-        }
-        .padding(20)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            LinearGradient(
-                gradient: Gradient(colors: gradient),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
+            .padding(20)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: gradient),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
             )
-        )
-        .cornerRadius(16)
-        .shadow(color: gradient.first?.opacity(0.3) ?? .clear, radius: 10, x: 0, y: 5)
+            .cornerRadius(16)
+            .shadow(color: gradient.first?.opacity(0.3) ?? .clear, radius: 10, x: 0, y: 5)
+        }
+        .buttonStyle(ScaleButtonStyle())
+    }
+}
+
+// MARK: - Scale Button Style (for tap feedback)
+struct ScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
     }
 }
 
@@ -685,73 +685,6 @@ struct ModernActivityRow: View {
         .padding(16)
         .background(Color.secondary.opacity(0.05))
         .cornerRadius(12)
-    }
-}
-
-// MARK: - Price Adjustment Opportunity Card
-struct PriceAdjustmentOpportunityCard: View {
-    let potentialSavings: Double
-    let recentPurchases: Int
-    let onCheckAdjustments: () -> Void
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: "dollarsign.circle.fill")
-                    .font(.title2)
-                    .foregroundColor(.green)
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Potential Savings Available")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.primary)
-                    
-                    Text("Based on your recent purchases")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                
-                Spacer()
-            }
-            
-            if potentialSavings > 0 {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("$\(String(format: "%.0f", potentialSavings))")
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .foregroundColor(.green)
-                    
-                    Text("Estimated savings from price adjustments")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    
-                                                             Button("Check Adjustments") {
-                        onCheckAdjustments()
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
-                }
-            } else {
-                Text("No adjustment opportunities found yet")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .italic()
-            }
-        }
-        .padding(20)
-        .background(
-            LinearGradient(
-                gradient: Gradient(colors: [Color.green.opacity(0.1), Color.green.opacity(0.05)]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        )
-        .cornerRadius(16)
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.green.opacity(0.2), lineWidth: 1)
-        )
     }
 }
 

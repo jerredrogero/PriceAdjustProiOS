@@ -405,18 +405,38 @@ struct EditReceiptView: View {
                         .padding(.vertical, 12)
                 }
                 
-                TextEditor(text: $notes)
-                    .foregroundColor(themeManager.primaryTextColor)
-                    .frame(minHeight: 80)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(themeManager.backgroundColor.opacity(0.5))
-                    .cornerRadius(8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(themeManager.secondaryTextColor.opacity(0.3), lineWidth: 1)
-                    )
-                    .onChange(of: notes) { _ in hasUnsavedChanges = true }
+                if #available(iOS 16.0, *) {
+                    TextEditor(text: $notes)
+                        .foregroundColor(themeManager.primaryTextColor)
+                        .scrollContentBackground(.hidden)
+                        .frame(minHeight: 80)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(themeManager.backgroundColor.opacity(0.5))
+                        .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(themeManager.secondaryTextColor.opacity(0.3), lineWidth: 1)
+                        )
+                        .onChange(of: notes) { _ in hasUnsavedChanges = true }
+                } else {
+                    // iOS 15 fallback - use TextField for single line or custom approach
+                    TextEditor(text: $notes)
+                        .foregroundColor(themeManager.isDarkMode ? .white : .black)
+                        .frame(minHeight: 80)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(themeManager.backgroundColor.opacity(0.5))
+                        .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(themeManager.secondaryTextColor.opacity(0.3), lineWidth: 1)
+                        )
+                        .onChange(of: notes) { _ in hasUnsavedChanges = true }
+                        .onAppear {
+                            UITextView.appearance().backgroundColor = .clear
+                        }
+                }
             }
         }
         .padding()

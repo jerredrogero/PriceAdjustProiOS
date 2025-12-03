@@ -151,91 +151,165 @@ struct OnSaleView: View {
     private func extractCategory(from description: String) -> String {
         let desc = description.lowercased()
         
-        // Health & Beauty (check first for specific personal care items)
-        let healthBeautyKeywords = [
-            "shampoo", "conditioner", "lotion", "cream", "moisturizer", "cleanser",
-            "soap", "deodorant", "antiperspirant", "toothpaste", "toothbrush",
-            "sunscreen", "beauty bar", "face", "skin", "hair", "makeup",
-            "cosmetic", "perfume", "cologne", "vitamin", "supplement",
-            "probiotic", "omega", "calcium", "magnesium", "zinc", "iron",
-            "multivitamin", "health", "wellness", "medicine", "ointment",
-            "bandage", "first aid", "pain relief"
+        // Use a scoring system - category with highest score wins
+        // This handles items that match multiple categories better
+        
+        var scores: [String: Int] = [
+            "Food & Beverages": 0,
+            "Health & Beauty": 0,
+            "Baby & Kids": 0,
+            "Household & Cleaning": 0,
+            "Electronics": 0,
+            "Home & Garden": 0,
+            "Clothing": 0,
+            "Automotive": 0
         ]
         
-        // Baby & Kids (check early to avoid misclassification)
-        let babyKidsKeywords = [
-            "baby", "infant", "toddler", "kids", "children", "diaper",
-            "wipes", "formula", "baby food", "stroller", "car seat",
-            "toy", "game", "puzzle", "educational", "learning"
-        ]
-        
-        // Food & Beverages
-        let foodBeverageKeywords = [
-            "organic", "food", "snack", "meat", "chicken", "beef", "pork",
-            "fish", "salmon", "tuna", "bread", "pasta", "rice", "cereal",
-            "milk", "cheese", "yogurt", "butter", "oil", "nuts", "trail mix",
-            "coffee", "tea", "juice", "water", "soda", "energy drink",
-            "protein", "bar", "cookie", "chocolate", "candy", "frozen",
-            "pizza", "ice cream", "fruit", "vegetable", "avocado"
-        ]
-        
-        // Household & Cleaning
-        let householdCleaningKeywords = [
-            "detergent", "laundry", "dishwasher", "cleaning", "cleaner",
-            "disinfectant", "wipes", "toilet paper", "paper towel",
-            "trash bag", "storage", "bin", "container", "lysol",
-            "tide", "cascade", "charmin", "bounty", "scrub"
-        ]
-        
-        // Electronics
-        let electronicsKeywords = [
-            "tv", "television", "laptop", "computer", "tablet", "ipad",
-            "phone", "smartphone", "camera", "headphone", "speaker",
-            "monitor", "printer", "electronic", "tech", "digital",
-            "smart", "wifi", "bluetooth", "samsung", "apple", "hp",
-            "sony", "lg", "dell", "chromebook", "macbook"
-        ]
-        
-        // Home & Garden
-        let homeGardenKeywords = [
-            "mattress", "pillow", "sheet", "blanket", "towel", "furniture",
-            "sofa", "chair", "table", "bed", "lamp", "curtain",
-            "vacuum", "appliance", "kitchen", "cookware", "knife",
-            "blender", "mixer", "grill", "garden", "plant", "seed",
-            "tool", "hardware", "light", "security", "alarm"
-        ]
-        
-        // Clothing
-        let clothingKeywords = [
-            "shirt", "pants", "shorts", "dress", "jacket", "coat",
-            "shoes", "socks", "underwear", "bra", "clothing", "apparel",
-            "fashion", "wear", "polo", "jeans", "legging", "blouse",
-            "athletic wear", "activewear", "swimwear"
-        ]
-        
-        // Automotive
+        // AUTOMOTIVE - Check first with high-confidence keywords
+        // These should NOT be confused with other categories
         let automotiveKeywords = [
-            "tire", "tires", "car", "auto", "automotive", "motor oil",
-            "brake", "battery", "engine", "vehicle", "truck", "suv"
+            "motor oil", "tire", "tires", "automotive", "car care",
+            "brake fluid", "transmission", "windshield", "wiper blade",
+            "engine oil", "5w-30", "5w-20", "10w-30", "synthetic oil",
+            "michelin", "goodyear", "bridgestone", "armor all"
         ]
+        if containsAnyKeyword(desc, keywords: automotiveKeywords) {
+            scores["Automotive"]! += 100  // High confidence
+        }
         
-        // Check categories in priority order (most specific first)
-        if containsAnyKeyword(desc, keywords: babyKidsKeywords) {
-            return "Baby & Kids"
-        } else if containsAnyKeyword(desc, keywords: healthBeautyKeywords) {
-            return "Health & Beauty"
-        } else if containsAnyKeyword(desc, keywords: foodBeverageKeywords) {
-            return "Food & Beverages"
-        } else if containsAnyKeyword(desc, keywords: householdCleaningKeywords) {
-            return "Household & Cleaning"
-        } else if containsAnyKeyword(desc, keywords: electronicsKeywords) {
-            return "Electronics"
-        } else if containsAnyKeyword(desc, keywords: homeGardenKeywords) {
-            return "Home & Garden"
-        } else if containsAnyKeyword(desc, keywords: clothingKeywords) {
-            return "Clothing"
-        } else if containsAnyKeyword(desc, keywords: automotiveKeywords) {
-            return "Automotive"
+        // ELECTRONICS - High confidence keywords
+        let electronicsHighConfidence = [
+            "tv", "television", "laptop", "computer", "tablet", "ipad",
+            "iphone", "smartphone", "camera", "headphone", "headphones",
+            "speaker", "monitor", "printer", "qled", "oled", "4k",
+            "macbook", "chromebook", "playstation", "nintendo", "xbox",
+            "airpods", "galaxy buds", "wireless earbuds", "soundbar"
+        ]
+        if containsAnyKeyword(desc, keywords: electronicsHighConfidence) {
+            scores["Electronics"]! += 100
+        }
+        
+        // Electronics brand names (medium confidence - could be accessories)
+        let electronicsBrands = ["samsung", "sony", "lg", "dell", "hp", "bose", "canon", "nikon"]
+        if containsAnyKeyword(desc, keywords: electronicsBrands) {
+            // Only boost if not already high confidence for another category
+            if !containsAnyKeyword(desc, keywords: ["lotion", "cream", "moisturizer", "cleanser"]) {
+                scores["Electronics"]! += 50
+            }
+        }
+        
+        // HOME & GARDEN - Kitchen appliances and home items
+        // Must check BEFORE food to avoid "blender" matching food
+        let homeGardenHighConfidence = [
+            "vacuum", "dyson", "shark", "roomba", "blender", "vitamix",
+            "ninja blender", "mixer", "kitchenaid", "stand mixer",
+            "instant pot", "air fryer", "pressure cooker", "slow cooker",
+            "grill", "weber", "traeger", "mattress", "pillow", "sheet set",
+            "blanket", "comforter", "towel", "bath towel", "cookware",
+            "knife set", "pots and pans", "furniture", "sofa", "chair",
+            "table", "lamp", "curtain", "rug", "garden hose", "lawn mower"
+        ]
+        if containsAnyKeyword(desc, keywords: homeGardenHighConfidence) {
+            scores["Home & Garden"]! += 100
+        }
+        
+        // BABY & KIDS - Check before household (both have "wipes")
+        let babyKidsHighConfidence = [
+            "baby", "infant", "toddler", "diaper", "diapers", "huggies",
+            "pampers", "baby wipes", "baby food", "formula", "stroller",
+            "car seat", "baby einstein", "toy", "toys", "kids", "children"
+        ]
+        if containsAnyKeyword(desc, keywords: babyKidsHighConfidence) {
+            scores["Baby & Kids"]! += 100
+        }
+        
+        // HOUSEHOLD & CLEANING
+        let householdHighConfidence = [
+            "detergent", "laundry", "dishwasher pods", "dishwasher pacs",
+            "disinfecting wipes", "cleaning wipes", "toilet paper",
+            "paper towel", "paper towels", "trash bag", "lysol",
+            "tide pods", "tide", "cascade", "charmin", "bounty",
+            "clorox", "cleaning", "cleaner", "fabric softener"
+        ]
+        if containsAnyKeyword(desc, keywords: householdHighConfidence) {
+            // Don't classify as household if it's baby wipes
+            if !desc.contains("baby") {
+                scores["Household & Cleaning"]! += 100
+            }
+        }
+        
+        // HEALTH & BEAUTY - Personal care and supplements
+        // Be careful not to match food items
+        let healthBeautyHighConfidence = [
+            "shampoo", "conditioner", "lotion", "moisturizer", "cleanser",
+            "soap", "body wash", "deodorant", "antiperspirant", "toothpaste",
+            "toothbrush", "electric toothbrush", "oral-b", "sunscreen", "spf",
+            "face wash", "skin care", "skincare", "makeup", "cosmetic",
+            "perfume", "cologne", "multivitamin", "vitamins", "supplement",
+            "fish oil", "omega-3", "probiotic", "calcium", "magnesium",
+            "cerave", "neutrogena", "olay", "first aid", "bandage"
+        ]
+        if containsAnyKeyword(desc, keywords: healthBeautyHighConfidence) {
+            // Exclude if it's clearly a kitchen appliance (Vitamix)
+            if !desc.contains("vitamix") && !desc.contains("blender") {
+                scores["Health & Beauty"]! += 100
+            }
+        }
+        
+        // FOOD & BEVERAGES
+        // Use specific food keywords, avoid ambiguous ones
+        let foodHighConfidence = [
+            "chicken", "beef", "pork", "salmon", "fish fillet", "tuna",
+            "ground beef", "steak", "bacon", "sausage", "hot dog",
+            "bread", "pasta", "rice", "quinoa", "cereal", "oatmeal",
+            "milk", "cheese", "yogurt", "butter", "eggs",
+            "olive oil", "coconut oil", "avocado oil", "cooking oil",
+            "vegetable oil", "canola oil",
+            "nuts", "almonds", "cashews", "peanuts", "trail mix", "mixed nuts",
+            "coffee", "tea", "juice", "water", "soda", "energy drink",
+            "protein bar", "granola bar", "cookie", "cookies", "chocolate",
+            "candy", "snack", "chips", "crackers", "popcorn",
+            "frozen pizza", "ice cream", "frozen", "fruit", "vegetable",
+            "avocado", "berries", "apple", "banana", "orange",
+            "almond butter", "peanut butter"
+        ]
+        if containsAnyKeyword(desc, keywords: foodHighConfidence) {
+            scores["Food & Beverages"]! += 100
+        }
+        
+        // Lower confidence food keywords (only if no other strong match)
+        let foodMediumConfidence = ["organic", "kirkland signature"]
+        if containsAnyKeyword(desc, keywords: foodMediumConfidence) {
+            // Only boost food if description seems food-related
+            let foodIndicators = ["oz", "lb", "lbs", "count", "pack", "fl oz", "gallon"]
+            if containsAnyKeyword(desc, keywords: foodIndicators) {
+                // But not if it's clearly another category
+                if scores["Health & Beauty"]! < 100 &&
+                   scores["Household & Cleaning"]! < 100 &&
+                   scores["Home & Garden"]! < 100 {
+                    scores["Food & Beverages"]! += 30
+                }
+            }
+        }
+        
+        // CLOTHING
+        let clothingHighConfidence = [
+            "shirt", "shirts", "pants", "shorts", "dress", "jacket", "coat",
+            "shoes", "socks", "underwear", "bra", "clothing", "apparel",
+            "polo", "jeans", "legging", "leggings", "blouse", "sweater",
+            "athletic wear", "activewear", "swimwear", "t-shirt", "hoodie",
+            "champion", "levi's", "levis", "calvin klein"
+        ]
+        if containsAnyKeyword(desc, keywords: clothingHighConfidence) {
+            scores["Clothing"]! += 100
+        }
+        
+        // Find the category with the highest score
+        let bestCategory = scores.max(by: { $0.value < $1.value })
+        
+        // Only return a category if we have some confidence
+        if let best = bestCategory, best.value > 0 {
+            return best.key
         }
         
         return "Other"
@@ -243,7 +317,12 @@ struct OnSaleView: View {
     
     private func containsAnyKeyword(_ text: String, keywords: [String]) -> Bool {
         return keywords.contains { keyword in
-            // Use word boundaries to avoid partial matches
+            // For multi-word keywords, just check if they're contained
+            if keyword.contains(" ") {
+                return text.contains(keyword)
+            }
+            // For single words, use word boundaries to avoid partial matches
+            // But handle edge cases like "tv" properly
             let pattern = "\\b\(NSRegularExpression.escapedPattern(for: keyword))\\b"
             let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive)
             let range = NSRange(location: 0, length: text.utf16.count)

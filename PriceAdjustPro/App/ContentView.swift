@@ -84,7 +84,7 @@ struct ContentView: View {
             object: nil,
             queue: .main
         ) { _ in
-            selectedTab = 3 // Price Adjustments tab
+            selectedTab = 3 // Analytics tab (Price Adjustments accessible from Dashboard)
         }
     }
 }
@@ -131,16 +131,16 @@ struct MainTabView: View {
                     .accessibilityHint("Add a new receipt")
                     .accessibilityIdentifier("upload-tab")
                 
-                // Price Adjustments - THE MAIN FEATURE
-                PriceAdjustmentsView()
+                // Analytics - detailed spending data
+                SpendingAnalyticsView()
                     .tabItem {
-                        Image(systemName: "dollarsign.circle")
-                        Text("Adjustments")
+                        Image(systemName: "chart.bar.fill")
+                        Text("Analytics")
                     }
                     .tag(3)
-                    .accessibilityLabel("Price Adjustments")
-                    .accessibilityHint("View available price adjustments")
-                    .accessibilityIdentifier("adjustments-tab")
+                    .accessibilityLabel("Analytics")
+                    .accessibilityHint("View detailed spending analytics")
+                    .accessibilityIdentifier("analytics-tab")
                 
                 // On Sale - current Costco promotions
                 OnSaleView()

@@ -4,6 +4,7 @@ import PDFKit
 struct ReceiptDetailView: View {
     let receipt: Receipt
     @EnvironmentObject var receiptStore: ReceiptStore
+    @EnvironmentObject var themeManager: ThemeManager
     @State private var showingEditSheet = false
     @State private var showingDeleteAlert = false
     @State private var showingShareSheet = false
@@ -11,31 +12,34 @@ struct ReceiptDetailView: View {
     
     var body: some View {
         ScrollView {
-            VStack(spacing: 20) {
-                // Header Card
-                ReceiptHeaderCard(receipt: receipt)
+            VStack(spacing: 0) {
+                // Compact Header
+                CompactReceiptHeader(receipt: receipt)
                 
-                // Line Items
-                LineItemsSection(receipt: receipt)
+                // Quick Summary Bar
+                QuickSummaryBar(receipt: receipt)
                 
-                // Totals Section
-                TotalsSection(receipt: receipt)
+                // Line Items (compact list)
+                CompactLineItemsList(receipt: receipt)
+                
+                // Totals
+                CompactTotalsSection(receipt: receipt)
                 
                 // PDF Preview (if available)
                 if receipt.pdfData != nil {
-                    PDFPreviewSection(receipt: receipt, showingPDFViewer: $showingPDFViewer)
+                    CompactPDFSection(receipt: receipt, showingPDFViewer: $showingPDFViewer)
                 }
                 
                 // Action Buttons
-                ActionButtonsSection(
+                CompactActionButtons(
                     showingEditSheet: $showingEditSheet,
                     showingShareSheet: $showingShareSheet,
                     showingDeleteAlert: $showingDeleteAlert
                 )
             }
-            .padding()
         }
-        .navigationTitle("Receipt Details")
+        .background(Color(.systemGroupedBackground))
+        .navigationTitle("Receipt")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingEditSheet) {
             EditReceiptView(receipt: receipt)
@@ -59,11 +63,9 @@ struct ReceiptDetailView: View {
     private func createShareItems() -> [Any] {
         var items: [Any] = []
         
-        // Add text summary
         let summary = createTextSummary()
         items.append(summary)
         
-        // Add PDF if available
         if let pdfData = receipt.pdfData {
             let tempURL = FileManager.default.temporaryDirectory
                 .appendingPathComponent("receipt_\(receipt.receiptNumber ?? "unknown").pdf")
@@ -110,157 +112,54 @@ struct ReceiptDetailView: View {
     }
 }
 
-struct ReceiptHeaderCard: View {
+// MARK: - Compact Header
+
+struct CompactReceiptHeader: View {
     let receipt: Receipt
     
     var body: some View {
-        VStack(spacing: 15) {
-            // Store Info
-            HStack {
+        HStack(spacing: 12) {
+            // Store icon
+            ZStack {
+                Circle()
+                    .fill(Color.costcoRed.opacity(0.15))
+                    .frame(width: 50, height: 50)
+                
                 Image(systemName: "building.2.fill")
+                    .font(.title3)
+                    .foregroundColor(.costcoRed)
+            }
+            
+            // Store info
+            VStack(alignment: .leading, spacing: 2) {
+                Text(receipt.storeName ?? "Unknown Store")
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .lineLimit(1)
+                
+                Text(receipt.formattedDate)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+            
+            // Total amount (prominent)
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(formatCurrency(receipt.total))
                     .font(.title2)
+                    .fontWeight(.bold)
                     .foregroundColor(.costcoRed)
                 
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(receipt.storeName ?? "Unknown Store")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                    
-                    if let location = receipt.storeLocation {
-                        Text(location)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                
-                Spacer()
-                
-                // Status Badge
-                if let status = receipt.processingStatus {
-                    Text(status.capitalized)
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(statusColor(for: status))
-                        .foregroundColor(.white)
-                        .cornerRadius(8)
-                }
-            }
-            
-            Divider()
-            
-            // Receipt Info
-            VStack(spacing: 10) {
-                InfoRow(label: "Date", value: receipt.formattedDate)
-                
                 if let receiptNumber = receipt.receiptNumber {
-                    InfoRow(label: "Receipt #", value: receiptNumber)
-                }
-                
-                InfoRow(label: "Items", value: "\(receipt.lineItemsArray.count)")
-            }
-        }
-        .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(12)
-    }
-    
-    private func statusColor(for status: String) -> Color {
-        switch status.lowercased() {
-        case "completed":
-            return .green
-        case "processing":
-            return .orange
-        case "failed":
-            return .red
-        default:
-            return .gray
-        }
-    }
-}
-
-struct InfoRow: View {
-    let label: String
-    let value: String
-    
-    var body: some View {
-        HStack {
-            Text(label)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-            
-            Spacer()
-            
-            Text(value)
-                .font(.subheadline)
-                .fontWeight(.medium)
-        }
-    }
-}
-
-struct LineItemsSection: View {
-    let receipt: Receipt
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 15) {
-            Text("Items")
-                .font(.title3)
-                .fontWeight(.bold)
-            
-            LazyVStack(spacing: 10) {
-                ForEach(receipt.lineItemsArray, id: \.objectID) { lineItem in
-                    LineItemRow(lineItem: lineItem)
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
-struct LineItemRow: View {
-    let lineItem: LineItem
-    
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 5) {
-                Text(lineItem.name ?? "Unknown Item")
-                    .font(.body)
-                    .fontWeight(.medium)
-                
-                HStack {
-                    if let itemCode = lineItem.itemCode {
-                        Text("Code: \(itemCode)")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    if let category = lineItem.category {
-                        Text("• \(category)")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-            }
-            
-            Spacer()
-            
-            VStack(alignment: .trailing, spacing: 5) {
-                Text(formatCurrency(lineItem.price))
-                    .font(.body)
-                    .fontWeight(.semibold)
-                
-                if lineItem.quantity > 1 {
-                    Text("Qty: \(lineItem.quantity)")
+                    Text("#\(receiptNumber)")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
             }
         }
-        .padding()
+        .padding(16)
         .background(Color(.systemBackground))
-        .cornerRadius(8)
-        .shadow(color: .black.opacity(0.1), radius: 1, x: 0, y: 1)
     }
     
     private func formatCurrency(_ amount: Double) -> String {
@@ -270,47 +169,224 @@ struct LineItemRow: View {
     }
 }
 
-struct TotalsSection: View {
+// MARK: - Quick Summary Bar
+
+struct QuickSummaryBar: View {
     let receipt: Receipt
     
     var body: some View {
-        VStack(spacing: 10) {
-            Text("Summary")
-                .font(.title3)
-                .fontWeight(.bold)
-                .frame(maxWidth: .infinity, alignment: .leading)
+        HStack(spacing: 0) {
+            SummaryPill(
+                icon: "cart.fill",
+                value: "\(receipt.lineItemsArray.count)",
+                label: "Items"
+            )
             
-            VStack(spacing: 8) {
-                TotalRow(label: "Subtotal", amount: receipt.subtotal, isTotal: false)
-                TotalRow(label: "Tax", amount: receipt.tax, isTotal: false)
-                
-                Divider()
-                
-                TotalRow(label: "Total", amount: receipt.total, isTotal: true)
+            Divider()
+                .frame(height: 30)
+            
+            SummaryPill(
+                icon: "minus.circle.fill",
+                value: formatCurrency(receipt.subtotal),
+                label: "Subtotal"
+            )
+            
+            Divider()
+                .frame(height: 30)
+            
+            SummaryPill(
+                icon: "percent",
+                value: formatCurrency(receipt.tax),
+                label: "Tax"
+            )
+        }
+        .padding(.vertical, 12)
+        .background(Color(.systemGray6))
+    }
+    
+    private func formatCurrency(_ amount: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.maximumFractionDigits = 2
+        return formatter.string(from: NSNumber(value: amount)) ?? "$0.00"
+    }
+}
+
+struct SummaryPill: View {
+    let icon: String
+    let value: String
+    let label: String
+    
+    var body: some View {
+        VStack(spacing: 4) {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.caption)
+                    .foregroundColor(.costcoRed)
+                Text(value)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
             }
-            .padding()
-            .background(Color(.systemGray6))
-            .cornerRadius(10)
+            Text(label)
+                .font(.caption2)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+// MARK: - Compact Line Items List
+
+struct CompactLineItemsList: View {
+    let receipt: Receipt
+    @State private var isExpanded = true
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Section header with collapse toggle
+            Button(action: { withAnimation(.easeInOut(duration: 0.2)) { isExpanded.toggle() } }) {
+                HStack {
+                    Text("Items")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.secondary)
+                    
+                    Spacer()
+                    
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(Color(.systemGroupedBackground))
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            if isExpanded {
+                // Items list
+                VStack(spacing: 0) {
+                    ForEach(Array(receipt.lineItemsArray.enumerated()), id: \.element.objectID) { index, lineItem in
+                        CompactLineItemRow(lineItem: lineItem, isEven: index % 2 == 0)
+                        
+                        if index < receipt.lineItemsArray.count - 1 {
+                            Divider()
+                                .padding(.leading, 16)
+                        }
+                    }
+                }
+                .background(Color(.systemBackground))
+            }
         }
     }
 }
 
-struct TotalRow: View {
-    let label: String
-    let amount: Double
-    let isTotal: Bool
+struct CompactLineItemRow: View {
+    let lineItem: LineItem
+    let isEven: Bool
     
     var body: some View {
-        HStack {
-            Text(label)
-                .font(isTotal ? .headline : .body)
-                .fontWeight(isTotal ? .bold : .medium)
+        HStack(spacing: 12) {
+            // Item name and details
+            VStack(alignment: .leading, spacing: 2) {
+                Text(lineItem.name ?? "Unknown Item")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .lineLimit(2)
+                
+                HStack(spacing: 6) {
+                    if let itemCode = lineItem.itemCode, !itemCode.isEmpty {
+                        Text(itemCode)
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    if lineItem.quantity > 1 {
+                        Text("×\(lineItem.quantity)")
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                            .foregroundColor(.costcoBlue)
+                    }
+                    
+                    if let category = lineItem.category, !category.isEmpty, category != "Other" {
+                        Text(category)
+                            .font(.caption2)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.costcoRed.opacity(0.1))
+                            .foregroundColor(.costcoRed)
+                            .cornerRadius(4)
+                    }
+                }
+            }
             
             Spacer()
             
-            Text(formatCurrency(amount))
-                .font(isTotal ? .headline : .body)
-                .fontWeight(isTotal ? .bold : .semibold)
+            // Price
+            Text(formatCurrency(lineItem.price))
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundColor(.primary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(isEven ? Color(.systemBackground) : Color(.systemGray6).opacity(0.5))
+    }
+    
+    private func formatCurrency(_ amount: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        return formatter.string(from: NSNumber(value: amount)) ?? "$0.00"
+    }
+}
+
+// MARK: - Compact Totals Section
+
+struct CompactTotalsSection: View {
+    let receipt: Receipt
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Divider line
+            Rectangle()
+                .fill(Color.costcoRed)
+                .frame(height: 3)
+            
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Total")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Text(formatCurrency(receipt.total))
+                        .font(.title)
+                        .fontWeight(.bold)
+                        .foregroundColor(.costcoRed)
+                }
+                
+                Spacer()
+                
+                // Breakdown
+                VStack(alignment: .trailing, spacing: 4) {
+                    HStack(spacing: 8) {
+                        Text("Subtotal:")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text(formatCurrency(receipt.subtotal))
+                            .font(.caption)
+                            .fontWeight(.medium)
+                    }
+                    HStack(spacing: 8) {
+                        Text("Tax:")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text(formatCurrency(receipt.tax))
+                            .font(.caption)
+                            .fontWeight(.medium)
+                    }
+                }
+            }
+            .padding(16)
+            .background(Color(.systemBackground))
         }
     }
     
@@ -321,95 +397,91 @@ struct TotalRow: View {
     }
 }
 
-struct PDFPreviewSection: View {
+// MARK: - Compact PDF Section
+
+struct CompactPDFSection: View {
     let receipt: Receipt
     @Binding var showingPDFViewer: Bool
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Receipt PDF")
-                .font(.title3)
-                .fontWeight(.bold)
-            
-            Button(action: {
-                showingPDFViewer = true
-            }) {
-                HStack {
-                    Image(systemName: "doc.fill")
-                        .font(.title2)
-                        .foregroundColor(.costcoRed)
-                    
-                    VStack(alignment: .leading) {
-                        Text("View Original Receipt")
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                        
-                        Text("PDF Document")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    Spacer()
-                    
-                    Image(systemName: "chevron.right")
-                        .foregroundColor(.gray)
-                }
-                .padding()
-                .background(Color(.systemBackground))
-                .cornerRadius(10)
-                .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+        Button(action: { showingPDFViewer = true }) {
+            HStack(spacing: 12) {
+                Image(systemName: "doc.fill")
+                    .font(.title3)
+                    .foregroundColor(.costcoRed)
+                
+                Text("View Original Receipt")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
-            .buttonStyle(PlainButtonStyle())
+            .padding(16)
+            .background(Color(.systemBackground))
         }
+        .buttonStyle(PlainButtonStyle())
+        .padding(.top, 8)
     }
 }
 
-struct ActionButtonsSection: View {
+// MARK: - Compact Action Buttons
+
+struct CompactActionButtons: View {
     @Binding var showingEditSheet: Bool
     @Binding var showingShareSheet: Bool
     @Binding var showingDeleteAlert: Bool
     
     var body: some View {
-        VStack(spacing: 15) {
-            // Primary Actions
-            HStack(spacing: 15) {
-                Button(action: {
-                    showingEditSheet = true
-                }) {
-                    Label("Edit", systemImage: "pencil")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.costcoRed)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
+        HStack(spacing: 12) {
+            // Edit button
+            Button(action: { showingEditSheet = true }) {
+                HStack(spacing: 6) {
+                    Image(systemName: "pencil")
+                    Text("Edit")
+                        .font(.subheadline.weight(.semibold))
                 }
-                
-                Button(action: {
-                    showingShareSheet = true
-                }) {
-                    Label("Share", systemImage: "square.and.arrow.up")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.gray)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(Color.costcoRed)
+                .foregroundColor(.white)
+                .cornerRadius(10)
             }
             
-            // Delete Button
-            Button(action: {
-                showingDeleteAlert = true
-            }) {
-                Label("Delete Receipt", systemImage: "trash")
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.red)
-                    .foregroundColor(.white)
+            // Share button
+            Button(action: { showingShareSheet = true }) {
+                HStack(spacing: 6) {
+                    Image(systemName: "square.and.arrow.up")
+                    Text("Share")
+                        .font(.subheadline.weight(.semibold))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(Color.costcoBlue)
+                .foregroundColor(.white)
+                .cornerRadius(10)
+            }
+            
+            // Delete button (icon only)
+            Button(action: { showingDeleteAlert = true }) {
+                Image(systemName: "trash")
+                    .font(.subheadline.weight(.semibold))
+                    .frame(width: 44)
+                    .padding(.vertical, 12)
+                    .background(Color.red.opacity(0.15))
+                    .foregroundColor(.red)
                     .cornerRadius(10)
             }
         }
+        .padding(16)
     }
 }
+
+// MARK: - Supporting Views
 
 struct ShareSheet: UIViewControllerRepresentable {
     let items: [Any]
@@ -466,4 +538,4 @@ struct PDFKitView: UIViewRepresentable {
     }
     .environmentObject(ReceiptStore())
     .environmentObject(ThemeManager())
-} 
+}

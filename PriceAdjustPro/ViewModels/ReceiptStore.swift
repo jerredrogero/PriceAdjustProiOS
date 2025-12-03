@@ -594,7 +594,7 @@ class ReceiptStore: ObservableObject {
     
     func getSpendingByMonth(for period: DateInterval? = nil) -> [String: Double] {
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MMM yyyy"
+        dateFormatter.dateFormat = "MMM" // Just month name, e.g., "Oct"
         
         var spendingByMonth: [String: Double] = [:]
         
@@ -625,12 +625,180 @@ class ReceiptStore: ObservableObject {
         
         for receipt in filteredReceipts {
             for lineItem in receipt.lineItemsArray {
-                let category = lineItem.category ?? "Other"
+                // Use stored category if available, otherwise extract from item name
+                let category = lineItem.category ?? extractCategory(from: lineItem.name ?? "")
                 categorySpending[category, default: 0] += lineItem.price * Double(lineItem.quantity)
             }
         }
         
         return categorySpending
+    }
+    
+    // MARK: - Category Extraction
+    
+    private func extractCategory(from description: String) -> String {
+        let desc = description.lowercased()
+        
+        // Return "Other" for empty descriptions
+        guard !desc.trimmingCharacters(in: .whitespaces).isEmpty else {
+            return "Other"
+        }
+        
+        // Food & Groceries - most common at Costco
+        // Includes Costco abbreviations: CHKN=chicken, BF=beef, ORG=organic, etc.
+        let foodKeywords = [
+            // Meat & Protein
+            "chicken", "chkn", "beef", "pork", "salmon", "fish", "tuna", "shrimp", "meat",
+            "steak", "bacon", "sausage", "ham", "turkey", "lamb", "rib", "roast", "ground",
+            "rotisserie", "deli", "lunchmeat",
+            // Bakery & Bread
+            "bread", "bagel", "croissant", "muffin", "tortilla", "bun", "roll", "bakery", "cake", "pie", "donut",
+            // Grains & Pasta
+            "pasta", "rice", "quinoa", "oatmeal", "cereal", "granola", "flour", "noodle",
+            // Dairy
+            "milk", "cheese", "yogurt", "butter", "cream", "egg", "dairy", "creamer",
+            // Oils & Cooking
+            "olive", "oil", "xvoo", "evoo", "coconut", "avocado oil", "cooking", "spray",
+            // Nuts & Snacks
+            "nut", "almond", "cashew", "peanut", "walnut", "pistachio", "trail mix", "mixed nuts",
+            "chip", "chips", "popcorn", "pretzel", "cracker", "snack",
+            // Produce
+            "fruit", "vegetable", "veggie", "produce", "avocado", "banana", "apple", "orange",
+            "berry", "grape", "mango", "lettuce", "spinach", "kale", "broccoli", "carrot",
+            "tomato", "onion", "potato", "salad", "organic", "org ",
+            // Frozen
+            "frozen", "pizza", "ice cream", "icecream",
+            // Pantry
+            "soup", "sauce", "salsa", "hummus", "dip", "spread", "honey", "syrup", "jam",
+            "jelly", "peanut butter", "almond butter", "canned", "can ",
+            // Sweets
+            "cookie", "chocolate", "candy", "sweet", "sugar",
+            // Protein bars & supplements (food category)
+            "protein bar", "granola bar", "bar ", "bars",
+            // General food terms
+            "food", "meal", "dinner", "lunch", "breakfast", "entree"
+        ]
+        
+        // Beverages
+        let beverageKeywords = [
+            "water", "h2o", "sparkling", "soda", "coke", "pepsi", "sprite", "cola",
+            "juice", "lemonade", "tea", "coffee", "espresso", "latte",
+            "wine", "beer", "vodka", "whiskey", "tequila", "rum", "liquor", "alcohol",
+            "la croix", "lacroix", "pellegrino", "evian", "fiji", "dasani", "aquafina",
+            "gatorade", "redbull", "red bull", "monster", "energy drink",
+            "drink", "beverage", "kombucha"
+        ]
+        
+        // Household & Cleaning
+        let householdKeywords = [
+            // Paper products (common Costco abbreviations)
+            "paper towel", "paper twl", "tp ", "toilet", "tissue", "napkin", "kleenex",
+            "charmin", "bounty", "scott", "cottonelle",
+            // Cleaning
+            "detergent", "laundry", "dishwasher", "dish ", "dishes", "soap",
+            "cleaner", "cleaning", "clean ", "wipe", "wipes", "disinfect",
+            "lysol", "clorox", "tide", "cascade", "dawn", "swiffer", "mr clean",
+            // Storage & Trash
+            "trash bag", "garbage", "ziploc", "glad", "hefty", "bag ", "bags",
+            "foil", "plastic wrap", "parchment", "wrap", "container",
+            // Costco abbreviations
+            "hh ", "household"
+        ]
+        
+        // Health & Personal Care
+        let healthKeywords = [
+            // Vitamins & Supplements
+            "vitamin", "vit ", "supplement", "probiotic", "omega", "fish oil", "calcium",
+            "multivitamin", "mineral",
+            // Medicine
+            "medicine", "tylenol", "advil", "ibuprofen", "aspirin", "pain", "cold", "flu",
+            "allergy", "zyrtec", "claritin", "benadryl",
+            // Personal care
+            "shampoo", "conditioner", "body wash", "lotion", "moisturizer",
+            "toothpaste", "toothbrush", "floss", "mouthwash", "oral-b", "crest", "colgate",
+            "deodorant", "razor", "shave", "shaving", "sunscreen", "spf",
+            "bandage", "first aid", "band-aid",
+            // Costco abbreviations
+            "hba", "health", "personal care"
+        ]
+        
+        // Baby & Kids
+        let babyKeywords = [
+            "diaper", "huggies", "pampers", "luvs", "baby wipe", "baby food",
+            "formula", "infant", "toddler", "baby", "kid", "child", "children"
+        ]
+        
+        // Pet Supplies
+        let petKeywords = [
+            "dog", "cat", "pet", "puppy", "kitten", "canine", "feline",
+            "kibble", "treats", "litter", "leash", "collar", "chew"
+        ]
+        
+        // Electronics & Tech
+        let electronicsKeywords = [
+            "tv", "television", "laptop", "computer", "tablet", "ipad", "iphone",
+            "phone", "airpods", "headphone", "earbuds", "speaker", "camera",
+            "battery", "batteries", "charger", "cable", "usb", "hdmi", "cord",
+            "printer", "ink", "toner", "electronics", "tech", "samsung", "lg", "sony", "apple"
+        ]
+        
+        // Home & Kitchen
+        let homeKeywords = [
+            "towel", "sheet", "pillow", "blanket", "bedding", "mattress", "bed ",
+            "cookware", "pan", "pot", "knife", "utensil", "spatula", "cutting board",
+            "blender", "mixer", "instant pot", "air fryer", "vacuum", "dyson",
+            "light bulb", "bulb", "led ", "extension", "storage", "furniture",
+            "kitchen", "home ", "house"
+        ]
+        
+        // Clothing & Apparel
+        let clothingKeywords = [
+            "shirt", "pants", "shorts", "dress", "jacket", "coat", "sweater",
+            "sock", "underwear", "bra", "shoe", "sandal", "slipper", "boot",
+            "clothing", "apparel", "wear", "jeans", "polo"
+        ]
+        
+        // Check categories - order matters (most specific first)
+        if containsKeyword(desc, keywords: babyKeywords) {
+            return "Baby & Kids"
+        }
+        if containsKeyword(desc, keywords: petKeywords) {
+            return "Pet Supplies"
+        }
+        if containsKeyword(desc, keywords: electronicsKeywords) {
+            return "Electronics"
+        }
+        if containsKeyword(desc, keywords: healthKeywords) {
+            return "Health & Personal Care"
+        }
+        if containsKeyword(desc, keywords: householdKeywords) {
+            return "Household"
+        }
+        if containsKeyword(desc, keywords: homeKeywords) {
+            return "Home & Kitchen"
+        }
+        if containsKeyword(desc, keywords: clothingKeywords) {
+            return "Clothing"
+        }
+        if containsKeyword(desc, keywords: beverageKeywords) {
+            return "Beverages"
+        }
+        if containsKeyword(desc, keywords: foodKeywords) {
+            return "Food & Groceries"
+        }
+        
+        // If it contains "KS" or "KIRKLAND" it's likely food
+        if desc.contains("ks ") || desc.contains("kirkland") {
+            return "Food & Groceries"
+        }
+        
+        return "Other"
+    }
+    
+    private func containsKeyword(_ text: String, keywords: [String]) -> Bool {
+        return keywords.contains { keyword in
+            text.contains(keyword)
+        }
     }
     
     // MARK: - Date Helpers

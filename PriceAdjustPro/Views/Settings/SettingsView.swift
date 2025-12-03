@@ -19,6 +19,13 @@ struct SettingsView: View {
     @State private var deleteAccountPassword = ""
     @State private var showingSubscription = false
     
+    // Get app version from bundle
+    private var appVersion: String {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+        return "\(version) (\(build))"
+    }
+    
     var body: some View {
         NavigationView {
             ZStack {
@@ -293,7 +300,7 @@ struct SettingsView: View {
                             Text("Version")
                                 .foregroundColor(themeManager.primaryTextColor)
                             Spacer()
-                            Text("1.0.0")
+                            Text(appVersion)
                                 .foregroundColor(themeManager.secondaryTextColor)
                         }
                     }

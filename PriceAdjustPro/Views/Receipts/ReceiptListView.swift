@@ -65,22 +65,18 @@ struct ReceiptListView: View {
                         SearchEmptyStateView(searchText: searchText)
                     }
                 } else {
-                                            List {
+                    ScrollView {
+                        LazyVStack(spacing: 16) {
                             ForEach(sortedReceipts, id: \.objectID) { receipt in
-                                ZStack {
-                                    ReceiptRowView(receipt: receipt)
-                                    NavigationLink("", destination: DetailViewWrapper(receipt: receipt))
-                                        .opacity(0)
+                                NavigationLink(destination: ReceiptDetailView(receipt: receipt)) {
+                                    ReceiptCardView(receipt: receipt)
                                 }
+                                .buttonStyle(PlainButtonStyle())
                             }
-                            .onDelete(perform: receiptStore.deleteReceipts)
-                            .listRowBackground(themeManager.listRowBackgroundColor)
                         }
-                        .background(Color.clear)
-                        .onAppear {
-                            // Remove default list background for iOS 15 compatibility
-                            UITableView.appearance().backgroundColor = UIColor.clear
-                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                    }
                     .refreshable {
                         receiptStore.syncWithServer()
                     }
@@ -169,6 +165,96 @@ struct ReceiptListView: View {
     }
 }
 
+struct ReceiptCardView: View {
+    @EnvironmentObject var themeManager: ThemeManager
+    let receipt: Receipt
+    
+    private let accentColor: Color = .costcoRed
+    
+    var body: some View {
+        HStack(spacing: 0) {
+            // Colored accent bar on the left
+            Rectangle()
+                .fill(accentColor)
+                .frame(width: 4)
+            
+            // Main content
+            HStack(spacing: 16) {
+                // Receipt icon with colored background
+                ZStack {
+                    Circle()
+                        .fill(accentColor.opacity(0.15))
+                        .frame(width: 50, height: 50)
+                    
+                    Image(systemName: "receipt")
+                        .font(.system(size: 22))
+                        .foregroundColor(accentColor)
+                }
+                
+                // Receipt details
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(receipt.storeName ?? "Unknown Store")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(themeManager.primaryTextColor)
+                        .lineLimit(1)
+                    
+                    HStack(spacing: 8) {
+                        // Date
+                        HStack(spacing: 4) {
+                            Image(systemName: "calendar")
+                                .font(.caption)
+                                .foregroundColor(themeManager.secondaryTextColor)
+                            Text(receipt.date ?? Date(), style: .date)
+                                .font(.subheadline)
+                                .foregroundColor(themeManager.secondaryTextColor)
+                        }
+                        
+                        // Items count
+                        HStack(spacing: 4) {
+                            Image(systemName: "cart")
+                                .font(.caption)
+                                .foregroundColor(themeManager.secondaryTextColor)
+                            Text("\(receipt.lineItemsArray.count) items")
+                                .font(.subheadline)
+                                .foregroundColor(themeManager.secondaryTextColor)
+                        }
+                    }
+                    
+                    if let receiptNumber = receipt.receiptNumber {
+                        Text("#\(receiptNumber)")
+                            .font(.caption)
+                            .foregroundColor(themeManager.secondaryTextColor.opacity(0.7))
+                    }
+                }
+                
+                Spacer()
+                
+                // Total amount
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text(String(format: "$%.2f", receipt.total))
+                        .font(.title3)
+                        .fontWeight(.bold)
+                        .foregroundColor(accentColor)
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundColor(themeManager.secondaryTextColor.opacity(0.5))
+                }
+            }
+            .padding(16)
+        }
+        .background(themeManager.cardBackgroundColor)
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 2)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(accentColor.opacity(0.2), lineWidth: 1)
+        )
+    }
+}
+
+// Keep the old ReceiptRowView for backwards compatibility if needed elsewhere
 struct ReceiptRowView: View {
     @EnvironmentObject var themeManager: ThemeManager
     let receipt: Receipt
@@ -406,14 +492,6 @@ struct DetailViewWrapper: View {
                             Spacer()
                             Text(formatCurrency(receipt.subtotal))
                                 .foregroundColor(themeManager.primaryTextColor)
-                        }
-                        
-                        HStack {
-                            Text("Instant Savings:")
-                                .foregroundColor(themeManager.successColor)
-                            Spacer()
-                            Text("-$10.00") // This should come from API data
-                                .foregroundColor(themeManager.successColor)
                         }
                         
                         HStack {
