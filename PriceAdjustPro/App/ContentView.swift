@@ -10,6 +10,7 @@ extension Notification.Name {
     static let navigateToReceipts = Notification.Name("navigateToReceipts")
     static let navigateToReceipt = Notification.Name("navigateToReceipt")
     static let navigateToPriceAdjustments = Notification.Name("navigateToPriceAdjustments")
+    static let navigateToUpload = Notification.Name("navigateToUpload")
     static let priceAdjustmentFound = Notification.Name("priceAdjustmentFound")
 }
 
@@ -85,6 +86,14 @@ struct ContentView: View {
             queue: .main
         ) { _ in
             selectedTab = 3 // Analytics tab (Price Adjustments accessible from Dashboard)
+        }
+        
+        NotificationCenter.default.addObserver(
+            forName: .navigateToUpload,
+            object: nil,
+            queue: .main
+        ) { _ in
+            selectedTab = 2 // Upload tab
         }
     }
 }

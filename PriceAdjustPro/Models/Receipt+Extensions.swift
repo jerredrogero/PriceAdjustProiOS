@@ -4,7 +4,8 @@ import CoreData
 extension Receipt {
     var lineItemsArray: [LineItem] {
         let set = lineItems as? Set<LineItem> ?? []
-        return Array(set).sorted { ($0.name ?? "") < ($1.name ?? "") }
+        // Sort by orderIndex to preserve the original receipt order
+        return Array(set).sorted { $0.orderIndex < $1.orderIndex }
     }
     
     var formattedDate: String {

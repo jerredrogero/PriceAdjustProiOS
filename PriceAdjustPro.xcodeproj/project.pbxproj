@@ -40,6 +40,9 @@
 		52A2AFBDCBCF44C9A822A790 /* SubscriptionSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7814FA42D55412682217469 /* SubscriptionSyncService.swift */; };
 		497B8FA332CE4D67B23372BF /* SubscriptionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B34869994D904BCC9D5689CF /* SubscriptionView.swift */; };
 		D6E4A92BF6A6D9C180D8FBF6 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6E4A92BF6A6D9C180D8FBF7 /* SplashView.swift */; };
+		3C0A1E842C8A123500000005 /* Receipt+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E852C8A123500000005 /* Receipt+Extensions.swift */; };
+		3C0A1E862C8A123500000006 /* LineItem+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E872C8A123500000006 /* LineItem+Extensions.swift */; };
+		3C0A1E882C8A123500000007 /* User+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E892C8A123500000007 /* User+Extensions.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -77,6 +80,9 @@
 		C7814FA42D55412682217469 /* SubscriptionSyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionSyncService.swift; sourceTree = "<group>"; };
 		B34869994D904BCC9D5689CF /* SubscriptionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionView.swift; sourceTree = "<group>"; };
 		D6E4A92BF6A6D9C180D8FBF7 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
+		3C0A1E852C8A123500000005 /* Receipt+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Receipt+Extensions.swift"; sourceTree = "<group>"; };
+		3C0A1E872C8A123500000006 /* LineItem+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LineItem+Extensions.swift"; sourceTree = "<group>"; };
+		3C0A1E892C8A123500000007 /* User+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "User+Extensions.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -147,6 +153,9 @@
 				3C0A1E332C8A123500000001 /* PersistenceController.swift */,
 				3C0A1E4A2C8A123500000001 /* AuthModels.swift */,
 				3C0A1E4C2C8A123500000001 /* ReceiptModels.swift */,
+				3C0A1E852C8A123500000005 /* Receipt+Extensions.swift */,
+				3C0A1E872C8A123500000006 /* LineItem+Extensions.swift */,
+				3C0A1E892C8A123500000007 /* User+Extensions.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -378,6 +387,9 @@
 				52A2AFBDCBCF44C9A822A790 /* SubscriptionSyncService.swift in Sources */,
 				497B8FA332CE4D67B23372BF /* SubscriptionView.swift in Sources */,
 				D6E4A92BF6A6D9C180D8FBF6 /* SplashView.swift in Sources */,
+				3C0A1E842C8A123500000005 /* Receipt+Extensions.swift in Sources */,
+				3C0A1E862C8A123500000006 /* LineItem+Extensions.swift in Sources */,
+				3C0A1E882C8A123500000007 /* User+Extensions.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -509,7 +521,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_ASSET_PATHS = "\"PriceAdjustPro/Preview Content\"";
 				DEVELOPMENT_TEAM = JA9X29KK29;
 				ENABLE_PREVIEWS = YES;
@@ -525,7 +537,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.priceadjustpro.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -540,7 +552,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_ASSET_PATHS = "\"PriceAdjustPro/Preview Content\"";
 				DEVELOPMENT_TEAM = JA9X29KK29;
 				ENABLE_PREVIEWS = YES;
@@ -556,7 +568,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.priceadjustpro.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

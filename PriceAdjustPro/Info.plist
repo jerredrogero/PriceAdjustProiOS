@@ -85,5 +85,16 @@
 	</array>
 	<key>UISupportsDocumentBrowser</key>
 	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.priceadjustpro</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>priceadjustpro</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist> 

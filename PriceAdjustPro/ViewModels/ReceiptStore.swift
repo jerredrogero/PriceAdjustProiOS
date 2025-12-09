@@ -445,8 +445,8 @@ class ReceiptStore: ObservableObject {
         receipt.createdAt = Date()
         receipt.updatedAt = Date()
         
-        // Create line items
-        for itemData in serverReceipt.items {
+        // Create line items (preserving order from receipt)
+        for (index, itemData) in serverReceipt.items.enumerated() {
             let lineItem = LineItem(context: context)
             lineItem.id = UUID()
             lineItem.name = itemData.description
@@ -454,6 +454,10 @@ class ReceiptStore: ObservableObject {
             lineItem.quantity = Int32(itemData.quantity)
             lineItem.itemCode = itemData.itemCode
             lineItem.category = nil // API doesn't provide category
+            lineItem.orderIndex = Int32(index)
+            lineItem.onSale = itemData.onSale
+            lineItem.instantSavings = Double(itemData.instantSavings ?? "0") ?? 0.0
+            lineItem.originalPrice = Double(itemData.originalPrice ?? "0") ?? 0.0
             lineItem.receipt = receipt
         }
     }
@@ -483,9 +487,9 @@ class ReceiptStore: ObservableObject {
             }
         }
         
-        // Then create new line items
+        // Then create new line items (preserving order from receipt)
         AppLogger.logDataCount(serverReceipt.items.count, type: "new line items from server")
-        for itemData in serverReceipt.items {
+        for (index, itemData) in serverReceipt.items.enumerated() {
             let lineItem = LineItem(context: viewContext!)
             lineItem.id = UUID()
             lineItem.name = itemData.description
@@ -493,8 +497,11 @@ class ReceiptStore: ObservableObject {
             lineItem.quantity = Int32(itemData.quantity)
             lineItem.itemCode = itemData.itemCode
             lineItem.category = nil // API doesn't provide category
+            lineItem.orderIndex = Int32(index)
+            lineItem.onSale = itemData.onSale
+            lineItem.instantSavings = Double(itemData.instantSavings ?? "0") ?? 0.0
+            lineItem.originalPrice = Double(itemData.originalPrice ?? "0") ?? 0.0
             lineItem.receipt = receipt
-            
         }
         
         AppLogger.logDataOperation("Local receipt update complete", success: true)
@@ -855,25 +862,6 @@ class ReceiptStore: ObservableObject {
 
 }
 
-// MARK: - Receipt Extension
-
-extension Receipt {
-    var lineItemsArray: [LineItem] {
-        return (lineItems?.allObjects as? [LineItem]) ?? []
-    }
-    
-    var formattedDate: String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        return formatter.string(from: date ?? Date())
-    }
-    
-    var formattedTotal: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        return formatter.string(from: NSNumber(value: total)) ?? "$0.00"
-    }
-} 
 
 // MARK: - Receipt Upload Errors
 

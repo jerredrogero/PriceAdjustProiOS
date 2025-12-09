@@ -28,32 +28,27 @@ struct AuthenticationView: View {
     }
     
     var body: some View {
-        NavigationView {
-            GeometryReader { geometry in
-                ZStack {
-                    // Background - solid red (same in light and dark mode)
-                    Color.costcoRed
-                        .ignoresSafeArea()
+        ZStack {
+            // Background - solid red (same in light and dark mode)
+            Color.costcoRed
+                .ignoresSafeArea()
+            
+            ScrollView {
+                VStack(spacing: 0) {
+                    // Header Section
+                    HeaderSection()
+                        .padding(.top, 60)
                     
-                    ScrollView {
-                        VStack(spacing: 0) {
-                            // Header Section
-                            HeaderSection()
-                                .padding(.top, geometry.safeAreaInsets.top + 40)
-                            
-                            // Main Content Card
-                            MainContentCard()
-                                .padding(.horizontal, 20)
-                                .padding(.top, 40)
-                            
-                            Spacer(minLength: 50)
-                        }
-                    }
+                    // Main Content Card
+                    MainContentCard()
+                        .padding(.horizontal, 20)
+                        .padding(.top, 40)
+                    
+                    Spacer(minLength: 50)
                 }
             }
-            .navigationBarHidden(true)
-            .preferredColorScheme(themeManager.isDarkMode ? .dark : .light)
         }
+        .preferredColorScheme(themeManager.isDarkMode ? .dark : .light)
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
             withAnimation(.easeInOut(duration: 0.3)) {
                 isKeyboardVisible = true
@@ -76,14 +71,15 @@ struct AuthenticationView: View {
         VStack(spacing: 20) {
             // Logo and App Name
             VStack(spacing: 16) {
-                // Costco Logo with Shadow
-                Image("costco_logo")
+                // App Logo with Shadow
+                Image("AppLogo")
                     .resizable()
                     .scaledToFit()
-                    .frame(height: 80)
+                    .frame(width: 80, height: 80)
+                    .clipShape(RoundedRectangle(cornerRadius: 18))
                     .shadow(radius: 10)
-                    .accessibilityLabel("Costco Logo")
-                    .accessibilityIdentifier("costco-logo")
+                    .accessibilityLabel("PriceAdjustPro Logo")
+                    .accessibilityIdentifier("app-logo")
                 
                 // App Title with Animation
                 VStack(spacing: 8) {

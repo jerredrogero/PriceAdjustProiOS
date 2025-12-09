@@ -79,8 +79,61 @@ import Combine
 import UserNotifications
 import UIKit
 
+// MARK: - App Delegate for Quick Actions
+class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication, configurationForConnecting connectingSceneSession: UISceneSession, options: UIScene.ConnectionOptions) -> UISceneConfiguration {
+        // Handle quick action if app was launched from one
+        if let shortcutItem = options.shortcutItem {
+            handleQuickAction(shortcutItem)
+        }
+        
+        let configuration = UISceneConfiguration(name: nil, sessionRole: connectingSceneSession.role)
+        configuration.delegateClass = SceneDelegate.self
+        return configuration
+    }
+    
+    func handleQuickAction(_ shortcutItem: UIApplicationShortcutItem) {
+        // Small delay to ensure the app is ready
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            switch shortcutItem.type {
+            case "com.priceadjustpro.upload":
+                NotificationCenter.default.post(name: .navigateToUpload, object: nil)
+            case "com.priceadjustpro.receipts":
+                NotificationCenter.default.post(name: .navigateToReceipts, object: nil)
+            case "com.priceadjustpro.onsale":
+                NotificationCenter.default.post(name: .navigateToOnSale, object: nil)
+            default:
+                break
+            }
+        }
+    }
+}
+
+// MARK: - Scene Delegate for Quick Actions
+class SceneDelegate: NSObject, UIWindowSceneDelegate {
+    func windowScene(_ windowScene: UIWindowScene, performActionFor shortcutItem: UIApplicationShortcutItem, completionHandler: @escaping (Bool) -> Void) {
+        // Handle quick action when app is already running
+        handleQuickAction(shortcutItem)
+        completionHandler(true)
+    }
+    
+    private func handleQuickAction(_ shortcutItem: UIApplicationShortcutItem) {
+        switch shortcutItem.type {
+        case "com.priceadjustpro.upload":
+            NotificationCenter.default.post(name: .navigateToUpload, object: nil)
+        case "com.priceadjustpro.receipts":
+            NotificationCenter.default.post(name: .navigateToReceipts, object: nil)
+        case "com.priceadjustpro.onsale":
+            NotificationCenter.default.post(name: .navigateToOnSale, object: nil)
+        default:
+            break
+        }
+    }
+}
+
 @main
 struct PriceAdjustProApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     let persistenceController = PersistenceController.shared
     @StateObject private var authService = AuthenticationService()
     @StateObject private var receiptStore = ReceiptStore()
@@ -115,6 +168,7 @@ struct PriceAdjustProApp: App {
                 // Initialize services on app launch
                 receiptStore.setPersistenceController(persistenceController)
                 setupNotifications()
+                setupQuickActions()
                 
                 // Clear notification badge when app launches
                 clearNotificationBadge()
@@ -149,7 +203,62 @@ struct PriceAdjustProApp: App {
                     sendPriceAdjustmentNotification(count: count, totalSavings: totalSavings)
                 }
             }
+            .onOpenURL { url in
+                // Handle deep links (e.g., priceadjustpro://upload)
+                handleDeepLink(url)
+            }
         }
+    }
+    
+    private func handleDeepLink(_ url: URL) {
+        guard url.scheme == "priceadjustpro" else { return }
+        
+        // Small delay to ensure app is ready after splash screen
+        let delay = showSplash ? 2.5 : 0.1
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            switch url.host {
+            case "upload":
+                NotificationCenter.default.post(name: .navigateToUpload, object: nil)
+            case "receipts":
+                NotificationCenter.default.post(name: .navigateToReceipts, object: nil)
+            case "onsale":
+                NotificationCenter.default.post(name: .navigateToOnSale, object: nil)
+            case "analytics":
+                NotificationCenter.default.post(name: .navigateToPriceAdjustments, object: nil)
+            default:
+                break
+            }
+        }
+    }
+    
+    private func setupQuickActions() {
+        // Define Quick Actions for home screen long-press menu
+        let uploadAction = UIApplicationShortcutItem(
+            type: "com.priceadjustpro.upload",
+            localizedTitle: "Upload Receipt",
+            localizedSubtitle: "Scan a new receipt",
+            icon: UIApplicationShortcutIcon(systemImageName: "camera.fill"),
+            userInfo: nil
+        )
+        
+        let viewReceiptsAction = UIApplicationShortcutItem(
+            type: "com.priceadjustpro.receipts",
+            localizedTitle: "View Receipts",
+            localizedSubtitle: "See all your receipts",
+            icon: UIApplicationShortcutIcon(systemImageName: "doc.text"),
+            userInfo: nil
+        )
+        
+        let onSaleAction = UIApplicationShortcutItem(
+            type: "com.priceadjustpro.onsale",
+            localizedTitle: "On Sale",
+            localizedSubtitle: "View current deals",
+            icon: UIApplicationShortcutIcon(systemImageName: "tag.fill"),
+            userInfo: nil
+        )
+        
+        UIApplication.shared.shortcutItems = [uploadAction, viewReceiptsAction, onSaleAction]
+        AppLogger.logDataOperation("Quick Actions setup complete: \(UIApplication.shared.shortcutItems?.count ?? 0) actions", success: true)
     }
     
     private func setupNotifications() {

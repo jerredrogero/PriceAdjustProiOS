@@ -171,6 +171,16 @@ struct ReceiptCardView: View {
     
     private let accentColor: Color = .costcoRed
     
+    // Check if receipt has any sale items (either onSale flag or has savings)
+    private var hasSaleItems: Bool {
+        receipt.lineItemsArray.contains { $0.onSale || $0.instantSavings > 0 }
+    }
+    
+    // Calculate total savings for this receipt
+    private var totalSavings: Double {
+        receipt.lineItemsArray.reduce(0) { $0 + $1.instantSavings }
+    }
+    
     var body: some View {
         HStack(spacing: 0) {
             // Colored accent bar on the left
@@ -193,11 +203,24 @@ struct ReceiptCardView: View {
                 
                 // Receipt details
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(receipt.storeName ?? "Unknown Store")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(themeManager.primaryTextColor)
-                        .lineLimit(1)
+                    HStack(spacing: 6) {
+                        Text(receipt.storeName ?? "Unknown Store")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(themeManager.primaryTextColor)
+                            .lineLimit(1)
+                        
+                        // Sale indicator badge
+                        if hasSaleItems {
+                            Text("SALE")
+                                .font(.system(size: 9, weight: .bold))
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 2)
+                                .background(Color.green)
+                                .foregroundColor(.white)
+                                .cornerRadius(4)
+                        }
+                    }
                     
                     HStack(spacing: 8) {
                         // Date
@@ -221,7 +244,17 @@ struct ReceiptCardView: View {
                         }
                     }
                     
-                    if let receiptNumber = receipt.receiptNumber {
+                    // Show savings if any
+                    if totalSavings > 0 {
+                        HStack(spacing: 4) {
+                            Image(systemName: "tag.fill")
+                                .font(.caption2)
+                            Text("Saved \(formatCurrency(totalSavings))")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                        }
+                        .foregroundColor(.green)
+                    } else if let receiptNumber = receipt.receiptNumber {
                         Text("#\(receiptNumber)")
                             .font(.caption)
                             .foregroundColor(themeManager.secondaryTextColor.opacity(0.7))
@@ -251,6 +284,12 @@ struct ReceiptCardView: View {
             RoundedRectangle(cornerRadius: 12)
                 .stroke(accentColor.opacity(0.2), lineWidth: 1)
         )
+    }
+    
+    private func formatCurrency(_ amount: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        return formatter.string(from: NSNumber(value: amount)) ?? "$0.00"
     }
 }
 
@@ -621,6 +660,17 @@ struct LineItemDetailRow: View {
     @EnvironmentObject var themeManager: ThemeManager
     let lineItem: LineItem
     
+    // Consider item on sale if either onSale flag is true OR instantSavings > 0
+    private var isOnSale: Bool {
+        lineItem.onSale || lineItem.instantSavings > 0
+    }
+    
+    // The price on Costco receipts is the ORIGINAL price
+    // The sale price is: original price - instant savings
+    private var salePrice: Double {
+        lineItem.price - lineItem.instantSavings
+    }
+    
     var body: some View {
         let backgroundColor = themeManager.listRowBackgroundColor
         VStack(spacing: 0) {
@@ -630,15 +680,35 @@ struct LineItemDetailRow: View {
                     .foregroundColor(themeManager.primaryTextColor)
                     .frame(width: 80, alignment: .leading)
                 
-                Text(lineItem.name ?? "Unknown Item")
-                    .font(.caption)
-                    .foregroundColor(themeManager.primaryTextColor)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                HStack(spacing: 4) {
+                    Text(lineItem.name ?? "Unknown Item")
+                        .font(.caption)
+                        .foregroundColor(themeManager.primaryTextColor)
+                    
+                    if isOnSale {
+                        Text("SALE")
+                            .font(.system(size: 8, weight: .bold))
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 1)
+                            .background(Color.green)
+                            .foregroundColor(.white)
+                            .cornerRadius(3)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 
-                Text(formatCurrency(lineItem.price))
-                    .font(.caption)
-                    .foregroundColor(themeManager.primaryTextColor)
-                    .frame(width: 60, alignment: .trailing)
+                // Show sale price if on sale, otherwise regular price
+                if isOnSale && lineItem.instantSavings > 0 {
+                    Text(formatCurrency(salePrice))
+                        .font(.caption)
+                        .foregroundColor(.green)
+                        .frame(width: 60, alignment: .trailing)
+                } else {
+                    Text(formatCurrency(lineItem.price))
+                        .font(.caption)
+                        .foregroundColor(themeManager.primaryTextColor)
+                        .frame(width: 60, alignment: .trailing)
+                }
                 
                 Text("\(lineItem.quantity)")
                     .font(.caption)
@@ -646,16 +716,24 @@ struct LineItemDetailRow: View {
                     .frame(width: 60, alignment: .center)
                 
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text(formatCurrency(lineItem.price * Double(lineItem.quantity)))
-                        .font(.caption)
-                        .foregroundColor(themeManager.primaryTextColor)
+                    // Show sale total or regular total
+                    if isOnSale && lineItem.instantSavings > 0 {
+                        Text(formatCurrency(salePrice * Double(lineItem.quantity)))
+                            .font(.caption)
+                            .foregroundColor(.green)
+                    } else {
+                        Text(formatCurrency(lineItem.price * Double(lineItem.quantity)))
+                            .font(.caption)
+                            .foregroundColor(themeManager.primaryTextColor)
+                    }
                     
-                    // Show sale info if applicable (placeholder for now)
-                    if lineItem.itemCode == "381" { // UBER FY24 items from your data
-                        Text("🟢 On Sale: $5.00")
+                    // Show sale info if applicable
+                    if isOnSale && lineItem.instantSavings > 0 {
+                        Text("Saved: \(formatCurrency(lineItem.instantSavings))")
                             .font(.caption2)
-                            .foregroundColor(themeManager.successColor)
-                        Text("Was: $79.99")
+                            .foregroundColor(.green)
+                        // Show original price (lineItem.price is the original on Costco receipts)
+                        Text("Was: \(formatCurrency(lineItem.price))")
                             .font(.caption2)
                             .foregroundColor(themeManager.secondaryTextColor)
                             .strikethrough()
@@ -665,7 +743,7 @@ struct LineItemDetailRow: View {
             }
             .padding(.horizontal)
             .padding(.vertical, 8)
-            .background(backgroundColor)
+            .background(isOnSale ? Color.green.opacity(0.08) : backgroundColor)
             
             Divider()
                 .background(themeManager.secondaryTextColor.opacity(0.3))

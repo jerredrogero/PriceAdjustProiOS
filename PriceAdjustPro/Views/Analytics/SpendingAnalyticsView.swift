@@ -41,8 +41,45 @@ struct SpendingAnalyticsView: View {
     }
     
     private var spendingByMonth: [(month: String, amount: Double)] {
-        let data = receiptStore.getSpendingByMonth(for: currentDateInterval)
-        return data.sorted { $0.key < $1.key }.map { (month: $0.key, amount: $0.value) }
+        let calendar = Calendar.current
+        let now = Date()
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM" // e.g., "Oct"
+        
+        // Generate last 6 months in chronological order (oldest to newest)
+        var monthlyData: [(date: Date, month: String, amount: Double)] = []
+        
+        for monthOffset in (0..<6).reversed() {
+            guard let monthDate = calendar.date(byAdding: .month, value: -monthOffset, to: now) else { continue }
+            let monthKey = formatter.string(from: monthDate)
+            monthlyData.append((date: monthDate, month: monthKey, amount: 0))
+        }
+        
+        // Filter receipts
+        let filteredReceipts = receiptStore.receipts.filter { receipt in
+            if let period = currentDateInterval {
+                return period.contains(receipt.date ?? Date())
+            }
+            return true
+        }
+        
+        // Sum spending by month
+        for receipt in filteredReceipts {
+            guard let receiptDate = receipt.date else { continue }
+            let receiptMonth = calendar.component(.month, from: receiptDate)
+            let receiptYear = calendar.component(.year, from: receiptDate)
+            
+            // Find matching month and add amount
+            if let index = monthlyData.firstIndex(where: { 
+                calendar.component(.month, from: $0.date) == receiptMonth &&
+                calendar.component(.year, from: $0.date) == receiptYear
+            }) {
+                monthlyData[index].amount += receipt.total
+            }
+        }
+        
+        // Return in chronological order (oldest to newest, left to right)
+        return monthlyData.map { (month: $0.month, amount: $0.amount) }
     }
     
     private var spendingByWeek: [(week: String, amount: Double)] {

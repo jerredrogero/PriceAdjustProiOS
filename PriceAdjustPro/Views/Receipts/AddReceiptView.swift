@@ -26,14 +26,8 @@ struct AddReceiptView: View {
     var body: some View {
         NavigationView {
             mainContent
-                .navigationBarTitle("", displayMode: .inline)
-                .navigationBarItems(
-                    leading: Button("Cancel") {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                    .foregroundColor(themeManager.accentColor),
-                    trailing: EmptyView()
-                )
+                .navigationBarTitle("Upload Receipt", displayMode: .inline)
+                .navigationBarHidden(true)
         }
         .sheet(isPresented: $showingCamera) {
             CameraView(selectedImage: $selectedImage)

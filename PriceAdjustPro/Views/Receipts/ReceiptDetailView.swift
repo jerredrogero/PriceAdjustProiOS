@@ -174,6 +174,10 @@ struct CompactReceiptHeader: View {
 struct QuickSummaryBar: View {
     let receipt: Receipt
     
+    private var totalSavings: Double {
+        receipt.lineItemsArray.reduce(0) { $0 + $1.instantSavings }
+    }
+    
     var body: some View {
         HStack(spacing: 0) {
             SummaryPill(
@@ -194,11 +198,20 @@ struct QuickSummaryBar: View {
             Divider()
                 .frame(height: 30)
             
-            SummaryPill(
-                icon: "percent",
-                value: formatCurrency(receipt.tax),
-                label: "Tax"
-            )
+            if totalSavings > 0 {
+                SummaryPill(
+                    icon: "tag.fill",
+                    value: formatCurrency(totalSavings),
+                    label: "Savings",
+                    valueColor: .green
+                )
+            } else {
+                SummaryPill(
+                    icon: "percent",
+                    value: formatCurrency(receipt.tax),
+                    label: "Tax"
+                )
+            }
         }
         .padding(.vertical, 12)
         .background(Color(.systemGray6))
@@ -216,16 +229,18 @@ struct SummaryPill: View {
     let icon: String
     let value: String
     let label: String
+    var valueColor: Color? = nil
     
     var body: some View {
         VStack(spacing: 4) {
             HStack(spacing: 4) {
                 Image(systemName: icon)
                     .font(.caption)
-                    .foregroundColor(.costcoRed)
+                    .foregroundColor(valueColor ?? .costcoRed)
                 Text(value)
                     .font(.subheadline)
                     .fontWeight(.semibold)
+                    .foregroundColor(valueColor)
             }
             Text(label)
                 .font(.caption2)
@@ -285,14 +300,49 @@ struct CompactLineItemRow: View {
     let lineItem: LineItem
     let isEven: Bool
     
+    // Consider item on sale if either onSale flag is true OR instantSavings > 0
+    private var isOnSale: Bool {
+        lineItem.onSale || lineItem.instantSavings > 0
+    }
+    
+    // The price on Costco receipts is the ORIGINAL price
+    // The sale price is: original price - instant savings
+    private var salePrice: Double {
+        lineItem.price - lineItem.instantSavings
+    }
+    
     var body: some View {
         HStack(spacing: 12) {
+            // Sale indicator bar on left for on-sale items
+            if isOnSale {
+                Rectangle()
+                    .fill(Color.green)
+                    .frame(width: 4)
+            }
+            
             // Item name and details
             VStack(alignment: .leading, spacing: 2) {
-                Text(lineItem.name ?? "Unknown Item")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .lineLimit(2)
+                HStack(spacing: 6) {
+                    Text(lineItem.name ?? "Unknown Item")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .lineLimit(2)
+                    
+                    // Sale badge
+                    if isOnSale {
+                        HStack(spacing: 3) {
+                            Image(systemName: "tag.fill")
+                                .font(.system(size: 8))
+                            Text("ON SALE")
+                                .font(.system(size: 9, weight: .bold))
+                        }
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(Color.green)
+                        .foregroundColor(.white)
+                        .cornerRadius(4)
+                    }
+                }
                 
                 HStack(spacing: 6) {
                     if let itemCode = lineItem.itemCode, !itemCode.isEmpty {
@@ -318,19 +368,53 @@ struct CompactLineItemRow: View {
                             .cornerRadius(4)
                     }
                 }
+                
+                // Show savings amount if on sale
+                if isOnSale && lineItem.instantSavings > 0 {
+                    HStack(spacing: 4) {
+                        Image(systemName: "dollarsign.circle.fill")
+                            .font(.caption)
+                        Text("You saved \(formatCurrency(lineItem.instantSavings))")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                        // Show original price (which is lineItem.price on Costco receipts)
+                        Text("(was \(formatCurrency(lineItem.price)))")
+                            .font(.caption2)
+                            .foregroundColor(.green.opacity(0.7))
+                    }
+                    .foregroundColor(.green)
+                    .padding(.top, 2)
+                }
             }
             
             Spacer()
             
-            // Price
-            Text(formatCurrency(lineItem.price))
-                .font(.subheadline)
-                .fontWeight(.semibold)
-                .foregroundColor(.primary)
+            // Price - show sale price if on sale, otherwise regular price
+            VStack(alignment: .trailing, spacing: 2) {
+                if isOnSale && lineItem.instantSavings > 0 {
+                    // Show the discounted sale price
+                    Text(formatCurrency(salePrice))
+                        .font(.subheadline)
+                        .fontWeight(.bold)
+                        .foregroundColor(.green)
+                    
+                    // Show original price struck through
+                    Text(formatCurrency(lineItem.price))
+                        .font(.caption)
+                        .strikethrough()
+                        .foregroundColor(.secondary)
+                } else {
+                    // Regular price (not on sale)
+                    Text(formatCurrency(lineItem.price))
+                        .font(.subheadline)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                }
+            }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, isOnSale ? 12 : 16)
         .padding(.vertical, 10)
-        .background(isEven ? Color(.systemBackground) : Color(.systemGray6).opacity(0.5))
+        .background(isOnSale ? Color.green.opacity(0.08) : (isEven ? Color(.systemBackground) : Color(.systemGray6).opacity(0.5)))
     }
     
     private func formatCurrency(_ amount: Double) -> String {
@@ -344,6 +428,10 @@ struct CompactLineItemRow: View {
 
 struct CompactTotalsSection: View {
     let receipt: Receipt
+    
+    private var totalSavings: Double {
+        receipt.lineItemsArray.reduce(0) { $0 + $1.instantSavings }
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -374,6 +462,17 @@ struct CompactTotalsSection: View {
                         Text(formatCurrency(receipt.subtotal))
                             .font(.caption)
                             .fontWeight(.medium)
+                    }
+                    if totalSavings > 0 {
+                        HStack(spacing: 8) {
+                            Text("Instant Savings:")
+                                .font(.caption)
+                                .foregroundColor(.green)
+                            Text("-\(formatCurrency(totalSavings))")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundColor(.green)
+                        }
                     }
                     HStack(spacing: 8) {
                         Text("Tax:")
