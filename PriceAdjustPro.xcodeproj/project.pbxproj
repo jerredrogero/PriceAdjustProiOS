@@ -3,11 +3,14 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
 		03A242162DFB505000AD5970 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = 03A242152DFB505000AD5970 /* KeychainAccess */; };
+		03C381262EE881E8001EC78D /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 03C381252EE881E7001EC78D /* WidgetKit.framework */; };
+		03C381282EE881E8001EC78D /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 03C381272EE881E8001EC78D /* SwiftUI.framework */; };
+		03C381372EE881E9001EC78D /* PriceAdjustProWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 03C381232EE881E7001EC78D /* PriceAdjustProWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		3C0A1E2B2C8A123400000001 /* PriceAdjustProApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E2A2C8A123400000001 /* PriceAdjustProApp.swift */; };
 		3C0A1E2D2C8A123400000001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E2C2C8A123400000001 /* ContentView.swift */; };
 		3C0A1E2F2C8A123500000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3C0A1E2E2C8A123500000001 /* Assets.xcassets */; };
@@ -20,11 +23,9 @@
 		3C0A1E4B2C8A123500000001 /* ReceiptModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E4C2C8A123500000001 /* ReceiptModels.swift */; };
 		3C0A1E4D2C8A123500000001 /* APIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E4E2C8A123500000001 /* APIService.swift */; };
 		3C0A1E4F2C8A123500000001 /* AuthenticationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E502C8A123500000001 /* AuthenticationView.swift */; };
-		3C0A1E7E2C8A123500000002 /* EmailVerificationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E7F2C8A123500000002 /* EmailVerificationView.swift */; };
 		3C0A1E512C8A123500000001 /* ReceiptListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E522C8A123500000001 /* ReceiptListView.swift */; };
 		3C0A1E532C8A123500000001 /* AddReceiptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E542C8A123500000001 /* AddReceiptView.swift */; };
 		3C0A1E552C8A123500000001 /* AnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E562C8A123500000001 /* AnalyticsView.swift */; };
-		3C0A1E802C8A123500000003 /* SpendingAnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E812C8A123500000003 /* SpendingAnalyticsView.swift */; };
 		3C0A1E572C8A123500000001 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E582C8A123500000001 /* ProfileView.swift */; };
 		3C0A1E5D2C8A123500000001 /* PDFService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E5E2C8A123500000001 /* PDFService.swift */; };
 		3C0A1E5F2C8A123500000001 /* PriceAdjustmentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E602C8A123500000001 /* PriceAdjustmentsView.swift */; };
@@ -34,18 +35,47 @@
 		3C0A1E692C8A123500000001 /* ThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E6A2C8A123500000001 /* ThemeManager.swift */; };
 		3C0A1E6B2C8A123500000001 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E6C2C8A123500000001 /* SettingsView.swift */; };
 		3C0A1E702C8A123500000001 /* EditReceiptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E712C8A123500000001 /* EditReceiptView.swift */; };
-		3C0A1E822C8A123500000004 /* ReceiptDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E832C8A123500000004 /* ReceiptDetailView.swift */; };
 		3C0A1E722C8A123500000001 /* AccountService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E732C8A123500000001 /* AccountService.swift */; };
-		C83D3C860BE942169D99D38B /* StoreKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F76F4613AD4E4DFE9EF58F4E /* StoreKitService.swift */; };
-		52A2AFBDCBCF44C9A822A790 /* SubscriptionSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7814FA42D55412682217469 /* SubscriptionSyncService.swift */; };
-		497B8FA332CE4D67B23372BF /* SubscriptionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B34869994D904BCC9D5689CF /* SubscriptionView.swift */; };
-		D6E4A92BF6A6D9C180D8FBF6 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6E4A92BF6A6D9C180D8FBF7 /* SplashView.swift */; };
+		3C0A1E7E2C8A123500000002 /* EmailVerificationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E7F2C8A123500000002 /* EmailVerificationView.swift */; };
+		3C0A1E802C8A123500000003 /* SpendingAnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E812C8A123500000003 /* SpendingAnalyticsView.swift */; };
+		3C0A1E822C8A123500000004 /* ReceiptDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E832C8A123500000004 /* ReceiptDetailView.swift */; };
 		3C0A1E842C8A123500000005 /* Receipt+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E852C8A123500000005 /* Receipt+Extensions.swift */; };
 		3C0A1E862C8A123500000006 /* LineItem+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E872C8A123500000006 /* LineItem+Extensions.swift */; };
 		3C0A1E882C8A123500000007 /* User+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E892C8A123500000007 /* User+Extensions.swift */; };
+		497B8FA332CE4D67B23372BF /* SubscriptionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B34869994D904BCC9D5689CF /* SubscriptionView.swift */; };
+		52A2AFBDCBCF44C9A822A790 /* SubscriptionSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7814FA42D55412682217469 /* SubscriptionSyncService.swift */; };
+		C83D3C860BE942169D99D38B /* StoreKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F76F4613AD4E4DFE9EF58F4E /* StoreKitService.swift */; };
+		D6E4A92BF6A6D9C180D8FBF6 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6E4A92BF6A6D9C180D8FBF7 /* SplashView.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		03C381352EE881E9001EC78D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3C0A1E1F2C8A123400000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 03C381222EE881E7001EC78D;
+			remoteInfo = PriceAdjustProWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		03C381382EE881E9001EC78D /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				03C381372EE881E9001EC78D /* PriceAdjustProWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		03C381232EE881E7001EC78D /* PriceAdjustProWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PriceAdjustProWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		03C381252EE881E7001EC78D /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		03C381272EE881E8001EC78D /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		3C0A1E272C8A123400000001 /* PriceAdjustPro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PriceAdjustPro.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3C0A1E2A2C8A123400000001 /* PriceAdjustProApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriceAdjustProApp.swift; sourceTree = "<group>"; };
 		3C0A1E2C2C8A123400000001 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -60,11 +90,9 @@
 		3C0A1E4C2C8A123500000001 /* ReceiptModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiptModels.swift; sourceTree = "<group>"; };
 		3C0A1E4E2C8A123500000001 /* APIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIService.swift; sourceTree = "<group>"; };
 		3C0A1E502C8A123500000001 /* AuthenticationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationView.swift; sourceTree = "<group>"; };
-		3C0A1E7F2C8A123500000002 /* EmailVerificationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailVerificationView.swift; sourceTree = "<group>"; };
 		3C0A1E522C8A123500000001 /* ReceiptListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiptListView.swift; sourceTree = "<group>"; };
 		3C0A1E542C8A123500000001 /* AddReceiptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddReceiptView.swift; sourceTree = "<group>"; };
 		3C0A1E562C8A123500000001 /* AnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsView.swift; sourceTree = "<group>"; };
-		3C0A1E812C8A123500000003 /* SpendingAnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendingAnalyticsView.swift; sourceTree = "<group>"; };
 		3C0A1E582C8A123500000001 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		3C0A1E5E2C8A123500000001 /* PDFService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFService.swift; sourceTree = "<group>"; };
 		3C0A1E602C8A123500000001 /* PriceAdjustmentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriceAdjustmentsView.swift; sourceTree = "<group>"; };
@@ -74,18 +102,43 @@
 		3C0A1E6A2C8A123500000001 /* ThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeManager.swift; sourceTree = "<group>"; };
 		3C0A1E6C2C8A123500000001 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		3C0A1E712C8A123500000001 /* EditReceiptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditReceiptView.swift; sourceTree = "<group>"; };
-		3C0A1E832C8A123500000004 /* ReceiptDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiptDetailView.swift; sourceTree = "<group>"; };
 		3C0A1E732C8A123500000001 /* AccountService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountService.swift; sourceTree = "<group>"; };
-		F76F4613AD4E4DFE9EF58F4E /* StoreKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitService.swift; sourceTree = "<group>"; };
-		C7814FA42D55412682217469 /* SubscriptionSyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionSyncService.swift; sourceTree = "<group>"; };
-		B34869994D904BCC9D5689CF /* SubscriptionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionView.swift; sourceTree = "<group>"; };
-		D6E4A92BF6A6D9C180D8FBF7 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
+		3C0A1E7F2C8A123500000002 /* EmailVerificationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailVerificationView.swift; sourceTree = "<group>"; };
+		3C0A1E812C8A123500000003 /* SpendingAnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendingAnalyticsView.swift; sourceTree = "<group>"; };
+		3C0A1E832C8A123500000004 /* ReceiptDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiptDetailView.swift; sourceTree = "<group>"; };
 		3C0A1E852C8A123500000005 /* Receipt+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Receipt+Extensions.swift"; sourceTree = "<group>"; };
 		3C0A1E872C8A123500000006 /* LineItem+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LineItem+Extensions.swift"; sourceTree = "<group>"; };
 		3C0A1E892C8A123500000007 /* User+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "User+Extensions.swift"; sourceTree = "<group>"; };
+		B34869994D904BCC9D5689CF /* SubscriptionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionView.swift; sourceTree = "<group>"; };
+		C7814FA42D55412682217469 /* SubscriptionSyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionSyncService.swift; sourceTree = "<group>"; };
+		D6E4A92BF6A6D9C180D8FBF7 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
+		F76F4613AD4E4DFE9EF58F4E /* StoreKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		03C3813B2EE881E9001EC78D /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 03C381222EE881E7001EC78D /* PriceAdjustProWidgetExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		03C381292EE881E8001EC78D /* PriceAdjustProWidget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (03C3813B2EE881E9001EC78D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = PriceAdjustProWidget; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
+
 /* Begin PBXFrameworksBuildPhase section */
+		03C381202EE881E7001EC78D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				03C381282EE881E8001EC78D /* SwiftUI.framework in Frameworks */,
+				03C381262EE881E8001EC78D /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		3C0A1E242C8A123400000001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -97,10 +150,21 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		03C381242EE881E7001EC78D /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				03C381252EE881E7001EC78D /* WidgetKit.framework */,
+				03C381272EE881E8001EC78D /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		3C0A1E1E2C8A123400000001 = {
 			isa = PBXGroup;
 			children = (
 				3C0A1E292C8A123400000001 /* PriceAdjustPro */,
+				03C381292EE881E8001EC78D /* PriceAdjustProWidget */,
+				03C381242EE881E7001EC78D /* Frameworks */,
 				3C0A1E282C8A123400000001 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -109,6 +173,7 @@
 			isa = PBXGroup;
 			children = (
 				3C0A1E272C8A123400000001 /* PriceAdjustPro.app */,
+				03C381232EE881E7001EC78D /* PriceAdjustProWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -287,6 +352,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		03C381222EE881E7001EC78D /* PriceAdjustProWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 03C3813C2EE881E9001EC78D /* Build configuration list for PBXNativeTarget "PriceAdjustProWidgetExtension" */;
+			buildPhases = (
+				03C3811F2EE881E7001EC78D /* Sources */,
+				03C381202EE881E7001EC78D /* Frameworks */,
+				03C381212EE881E7001EC78D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				03C381292EE881E8001EC78D /* PriceAdjustProWidget */,
+			);
+			name = PriceAdjustProWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = PriceAdjustProWidgetExtension;
+			productReference = 03C381232EE881E7001EC78D /* PriceAdjustProWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		3C0A1E262C8A123400000001 /* PriceAdjustPro */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 3C0A1E3B2C8A123500000001 /* Build configuration list for PBXNativeTarget "PriceAdjustPro" */;
@@ -294,10 +381,12 @@
 				3C0A1E232C8A123400000001 /* Sources */,
 				3C0A1E242C8A123400000001 /* Frameworks */,
 				3C0A1E252C8A123400000001 /* Resources */,
+				03C381382EE881E9001EC78D /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				03C381362EE881E9001EC78D /* PBXTargetDependency */,
 			);
 			name = PriceAdjustPro;
 			productName = PriceAdjustPro;
@@ -311,9 +400,13 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1500;
+				LastSwiftUpdateCheck = 1640;
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
+					03C381222EE881E7001EC78D = {
+						CreatedOnToolsVersion = 16.4;
+						LastSwiftMigration = 1640;
+					};
 					3C0A1E262C8A123400000001 = {
 						CreatedOnToolsVersion = 15.0;
 					};
@@ -336,11 +429,19 @@
 			projectRoot = "";
 			targets = (
 				3C0A1E262C8A123400000001 /* PriceAdjustPro */,
+				03C381222EE881E7001EC78D /* PriceAdjustProWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		03C381212EE881E7001EC78D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		3C0A1E252C8A123400000001 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -353,6 +454,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		03C3811F2EE881E7001EC78D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		3C0A1E232C8A123400000001 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -395,7 +503,74 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		03C381362EE881E9001EC78D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 03C381222EE881E7001EC78D /* PriceAdjustProWidgetExtension */;
+			targetProxy = 03C381352EE881E9001EC78D /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		03C381392EE881E9001EC78D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = JA9X29KK29;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PriceAdjustProWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = PriceAdjustProWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.priceadjustpro.ios.PriceAdjustProWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		03C3813A2EE881E9001EC78D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = JA9X29KK29;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PriceAdjustProWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = PriceAdjustProWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.priceadjustpro.ios.PriceAdjustProWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		3C0A1E392C8A123500000001 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -542,7 +717,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -573,13 +748,22 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		03C3813C2EE881E9001EC78D /* Build configuration list for PBXNativeTarget "PriceAdjustProWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				03C381392EE881E9001EC78D /* Debug */,
+				03C3813A2EE881E9001EC78D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		3C0A1E222C8A123400000001 /* Build configuration list for PBXProject "PriceAdjustPro" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
