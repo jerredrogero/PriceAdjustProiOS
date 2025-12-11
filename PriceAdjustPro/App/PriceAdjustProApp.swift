@@ -139,7 +139,7 @@ struct PriceAdjustProApp: App {
     @StateObject private var receiptStore = ReceiptStore()
     @StateObject private var themeManager = ThemeManager()
     @StateObject private var accountService = AccountService.shared
-    // @StateObject private var notificationManager = NotificationManager.shared
+    @StateObject private var notificationManager = NotificationManager.shared
     @StateObject private var priceAdjustmentsViewModel = PriceAdjustmentsViewModel()
     @StateObject private var storeKitService = StoreKitService.shared
     @State private var showSplash = true
@@ -157,7 +157,7 @@ struct PriceAdjustProApp: App {
                         .environmentObject(receiptStore)
                         .environmentObject(themeManager)
                         .environmentObject(accountService)
-                        // .environmentObject(notificationManager)
+                        .environmentObject(notificationManager)
                         .environmentObject(priceAdjustmentsViewModel)
                         .environmentObject(storeKitService)
                         .preferredColorScheme(themeManager.colorScheme)
@@ -262,14 +262,13 @@ struct PriceAdjustProApp: App {
     }
     
     private func setupNotifications() {
-        // TODO: Re-enable when notification manager is accessible
         // Update notification permission status
-        // notificationManager.updatePermissionStatus()
+        notificationManager.updatePermissionStatus()
         
         // Request permissions if not yet determined
-        // if notificationManager.notificationPermissionStatus == UNAuthorizationStatus.notDetermined {
-        //     notificationManager.requestNotificationPermission()
-        // }
+        if notificationManager.notificationPermissionStatus == UNAuthorizationStatus.notDetermined {
+            notificationManager.requestNotificationPermission()
+        }
         
         AppLogger.logDataOperation("Notification system initialized", success: true)
     }

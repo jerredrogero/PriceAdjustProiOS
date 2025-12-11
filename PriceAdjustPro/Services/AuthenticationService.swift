@@ -193,6 +193,59 @@ class AuthenticationService: ObservableObject {
             print("Login failed: No user data received")
             return
         }
+
+        // Some endpoints (notably token refresh) may return a partial user payload.
+        // Preserve previously-known fields (e.g. account_type/premium) so the UI doesn't
+        // temporarily regress to free limits after refresh.
+        let mergedUser: APIUserResponse = {
+            guard let existing = currentUser else { return user }
+            
+            func accountTypeIndicatesPaid(_ type: String?) -> Bool {
+                guard let type, !type.isEmpty else { return false }
+                let t = type.lowercased()
+                return t == "paid" ||
+                       t == "premium" ||
+                       t == "pro" ||
+                       t == "subscription" ||
+                       t == "active" ||
+                       t == "subscriber"
+            }
+            
+            func accountTypeIndicatesFree(_ type: String?) -> Bool {
+                guard let type, !type.isEmpty else { return true }
+                let t = type.lowercased()
+                return t == "free" ||
+                       t == "basic" ||
+                       t == "trial" ||
+                       t == "inactive"
+            }
+            
+            // If we already know the user is paid, don't let a refresh response "downgrade"
+            // us to free via a stale/partial payload.
+            let existingIsPaid = accountTypeIndicatesPaid(existing.accountType)
+            let incomingAccountType: String? = {
+                guard let incoming = user.accountType, !incoming.isEmpty else { return nil }
+                if existingIsPaid && accountTypeIndicatesFree(incoming) && !accountTypeIndicatesPaid(incoming) {
+                    return existing.accountType
+                }
+                return incoming
+            }()
+            
+            return APIUserResponse(
+                id: user.id != 0 ? user.id : existing.id,
+                username: user.username ?? existing.username,
+                email: user.email,
+                firstName: user.firstName ?? existing.firstName,
+                lastName: user.lastName ?? existing.lastName,
+                accountType: incomingAccountType ?? existing.accountType,
+                receiptCount: user.receiptCount ?? existing.receiptCount,
+                // Same downgrade-prevention for limits: keep "unlimited" if we already had it.
+                receiptLimit: (existingIsPaid && !accountTypeIndicatesPaid(incomingAccountType) && user.receiptLimit != nil)
+                    ? existing.receiptLimit
+                    : (user.receiptLimit ?? existing.receiptLimit),
+                isEmailVerified: user.isEmailVerified ?? existing.isEmailVerified
+            )
+        }()
         
         // Check if email verification is needed (for login with unverified account)
         if user.isEmailVerified == false && password != nil {
@@ -237,22 +290,22 @@ class AuthenticationService: ObservableObject {
         }
         
         // Update user state
-        currentUser = user
+        currentUser = mergedUser
         isAuthenticated = true
         errorMessage = nil
         
         // Debug: Print account type information
         print("=== SUBSCRIPTION DEBUG ===")
-        print("User authenticated: \(user.email)")
-        print("Raw account type from API: '\(user.accountType ?? "nil")'")
-        print("Is paid user: \(user.isPaidUser)")
-        print("Is free user: \(user.isFreeUser)")
-        print("Receipt count: \(user.receiptCount ?? 0)")
-        print("Receipt limit: \(user.receiptLimit ?? 0)")
+        print("User authenticated: \(mergedUser.email)")
+        print("Raw account type from API: '\(mergedUser.accountType ?? "nil")'")
+        print("Is paid user: \(mergedUser.isPaidUser)")
+        print("Is free user: \(mergedUser.isFreeUser)")
+        print("Receipt count: \(mergedUser.receiptCount ?? 0)")
+        print("Receipt limit: \(mergedUser.receiptLimit ?? 0)")
         print("==========================")
         
         // Notify AccountService about authentication
-        NotificationCenter.default.post(name: .userDidAuthenticate, object: user)
+        NotificationCenter.default.post(name: .userDidAuthenticate, object: mergedUser)
         
         AppLogger.logSecurityEvent("Login successful for user: \(user.username ?? user.email)")
         if response.accessToken != nil {
@@ -370,353 +423,5 @@ extension Keychain {
                 try? remove(key)
             }
         }
-    }
-}
-
-// MARK: - Note: Using separate BiometricAuthService.swift file
-
-// MARK: - Temporary BiometricAuthService (until separate file is added to build target)
-class BiometricAuthService: ObservableObject {
-    static let shared = BiometricAuthService()
-    
-    @Published var biometricType: LABiometryType = .none
-    @Published var biometricError: String?
-    @Published var isBiometricEnabled: Bool = false
-    
-    private let userDefaults = UserDefaults.standard
-    private let biometricEnabledKey = "biometric_auth_enabled"
-    private let storedCredentialsKey = "stored_credentials"
-    
-    private init() {
-        checkBiometricAvailability()
-        loadBiometricPreference()
-    }
-    
-    func checkBiometricAvailability() {
-        let context = LAContext()
-        var error: NSError?
-        
-        AppLogger.logSecurityEvent("Checking biometric availability...")
-        
-        if context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) {
-            biometricType = context.biometryType
-            AppLogger.logSecurityEvent("Biometric available: \(biometricTypeString) (type: \(biometricType.rawValue))")
-        } else {
-            biometricType = .none
-            let errorDescription = error?.localizedDescription ?? "Unknown error"
-            biometricError = errorDescription
-            AppLogger.logWarning("Biometric not available: \(errorDescription)", context: "BiometricAuth")
-        }
-    }
-    
-    var isBiometricAvailable: Bool {
-        let available = biometricType != .none
-        AppLogger.logSecurityEvent("isBiometricAvailable called - type: \(biometricType.rawValue), available: \(available)")
-        return available
-    }
-    
-    var biometricTypeString: String {
-        switch biometricType {
-        case .faceID:
-            return "Face ID"
-        case .touchID:
-            return "Touch ID"
-        case .opticID:
-            return "Optic ID"
-        case .none:
-            return "Biometric Authentication"
-        @unknown default:
-            return "Biometric Authentication"
-        }
-    }
-    
-    private func loadBiometricPreference() {
-        isBiometricEnabled = userDefaults.bool(forKey: biometricEnabledKey)
-        AppLogger.logSecurityEvent("Loaded biometric preference - enabled: \(isBiometricEnabled)")
-    }
-    
-    func setBiometricEnabled(_ enabled: Bool) {
-        isBiometricEnabled = enabled
-        userDefaults.set(enabled, forKey: biometricEnabledKey)
-        
-        if !enabled {
-            clearStoredCredentials()
-        }
-    }
-    
-    func storeCredentials(email: String, password: String, isInitialSetup: Bool = false) -> Bool {
-        if !isInitialSetup {
-            guard isBiometricEnabled else { 
-                AppLogger.logWarning("Attempted to store credentials when biometric auth is disabled", context: "BiometricAuth")
-                return false 
-            }
-        }
-        
-        AppLogger.logSecurityEvent("Attempting to store biometric credentials for: \(email)")
-        let credentials = ["email": email, "password": password]
-        
-        do {
-            let data = try JSONEncoder().encode(credentials)
-            AppLogger.logSecurityEvent("Credentials encoded successfully, attempting keychain storage")
-            
-            let success = KeychainHelper.save(data: data, forKey: storedCredentialsKey)
-            
-            if success {
-                AppLogger.logSecurityEvent("Biometric credentials stored successfully")
-            } else {
-                AppLogger.logError(BiometricError.keychainStorageFailed, context: "Store credentials")
-            }
-            
-            return success
-        } catch {
-            AppLogger.logError(error, context: "Encode credentials for storage")
-            return false
-        }
-    }
-    
-    func getStoredCredentials() async -> (email: String, password: String)? {
-        guard isBiometricEnabled else { return nil }
-        
-        do {
-            let success = try await authenticateWithBiometrics(reason: "Access your saved login credentials")
-            
-            if success {
-                guard let data = KeychainHelper.load(forKey: storedCredentialsKey) else {
-                    AppLogger.logWarning("No stored credentials found", context: "Biometric auth")
-                    return nil
-                }
-                
-                let credentials = try JSONDecoder().decode([String: String].self, from: data)
-                
-                guard let email = credentials["email"],
-                      let password = credentials["password"] else {
-                    AppLogger.logError(BiometricError.invalidCredentialFormat, context: "Parse stored credentials")
-                    return nil
-                }
-                
-                AppLogger.logSecurityEvent("Biometric credentials retrieved successfully")
-                return (email: email, password: password)
-            } else {
-                return nil
-            }
-        } catch {
-            await MainActor.run {
-                biometricError = error.localizedDescription
-            }
-            AppLogger.logError(error, context: "Retrieve stored credentials")
-            return nil
-        }
-    }
-    
-    private func clearStoredCredentials() {
-        KeychainHelper.delete(forKey: storedCredentialsKey)
-        AppLogger.logSecurityEvent("Biometric credentials cleared")
-    }
-    
-    func authenticateWithBiometrics(reason: String) async throws -> Bool {
-        let context = LAContext()
-        context.localizedFallbackTitle = "Use Passcode"
-        
-        do {
-            let success = try await context.evaluatePolicy(
-                .deviceOwnerAuthenticationWithBiometrics,
-                localizedReason: reason
-            )
-            
-            await MainActor.run {
-                biometricError = nil
-            }
-            
-            AppLogger.logSecurityEvent("Biometric authentication \(success ? "successful" : "failed")")
-            return success
-        } catch {
-            await MainActor.run {
-                biometricError = error.localizedDescription
-            }
-            AppLogger.logError(error, context: "Biometric authentication")
-            throw error
-        }
-    }
-    
-    func setupBiometricAuth(email: String, password: String, skipValidation: Bool = false) async -> Bool {
-        AppLogger.logSecurityEvent("setupBiometricAuth called for: \(email), skipValidation: \(skipValidation)")
-        
-        guard isBiometricAvailable else {
-            AppLogger.logWarning("Biometric not available: \(biometricType)", context: "BiometricAuth")
-            await MainActor.run {
-                biometricError = "Biometric authentication is not available on this device"
-            }
-            return false
-        }
-        
-        AppLogger.logSecurityEvent("Biometric available: \(biometricTypeString)")
-        
-        // Skip credential validation if called from post-login flow
-        if !skipValidation {
-            AppLogger.logSecurityEvent("Validating credentials before storing for biometric auth")
-            
-            let isValidCredentials = await validateCredentials(email: email, password: password)
-            
-            if !isValidCredentials {
-                AppLogger.logWarning("Credential validation failed for biometric setup", context: "BiometricAuth")
-                await MainActor.run {
-                    biometricError = "Invalid password. Please enter your correct account password."
-                }
-                return false
-            }
-        } else {
-            AppLogger.logSecurityEvent("Skipping credential validation (called from post-login flow)")
-        }
-        
-        do {
-            AppLogger.logSecurityEvent("Requesting biometric authentication for setup")
-            let success = try await authenticateWithBiometrics(
-                reason: "Enable \(biometricTypeString) for quick and secure login"
-            )
-            
-            AppLogger.logSecurityEvent("Biometric authentication result: \(success)")
-            
-            if success {
-                AppLogger.logSecurityEvent("Attempting to store credentials in keychain")
-                let stored = storeCredentials(email: email, password: password, isInitialSetup: true)
-                AppLogger.logSecurityEvent("Credential storage result: \(stored)")
-                
-                if stored {
-                    await MainActor.run {
-                        setBiometricEnabled(true)
-                    }
-                    AppLogger.logSecurityEvent("Biometric authentication setup completed successfully")
-                    return true
-                } else {
-                    AppLogger.logError(BiometricError.keychainStorageFailed, context: "Failed to store credentials in keychain")
-                    await MainActor.run {
-                        biometricError = "Failed to securely store credentials in keychain"
-                    }
-                    return false
-                }
-            } else {
-                AppLogger.logWarning("User cancelled biometric authentication setup", context: "BiometricAuth")
-                await MainActor.run {
-                    biometricError = "Biometric authentication setup was cancelled"
-                }
-                return false
-            }
-        } catch let error as LAError {
-            // Handle specific LocalAuthentication errors
-            let errorMessage: String
-            switch error.code {
-            case .userCancel:
-                errorMessage = "Setup was cancelled"
-            case .userFallback:
-                errorMessage = "User chose to use passcode instead"
-            case .systemCancel:
-                errorMessage = "System cancelled the setup"
-            case .biometryNotAvailable:
-                errorMessage = "\(biometricTypeString) is not available"
-            case .biometryNotEnrolled:
-                errorMessage = "\(biometricTypeString) is not set up. Please set it up in Settings first."
-            case .biometryLockout:
-                errorMessage = "\(biometricTypeString) is locked. Please unlock it in Settings."
-            default:
-                errorMessage = error.localizedDescription
-            }
-            
-            AppLogger.logError(error, context: "Biometric authentication setup failed with LA error: \(error.code.rawValue)")
-            await MainActor.run {
-                biometricError = errorMessage
-            }
-            return false
-        } catch {
-            AppLogger.logError(error, context: "Biometric authentication setup failed with unknown error")
-            await MainActor.run {
-                biometricError = error.localizedDescription
-            }
-            return false
-        }
-    }
-    
-    private func validateCredentials(email: String, password: String) async -> Bool {
-        return await withCheckedContinuation { continuation in
-            var cancellable: AnyCancellable?
-            
-            cancellable = APIService.shared.login(email: email, password: password)
-                .receive(on: DispatchQueue.main)
-                .sink(
-                    receiveCompletion: { completion in
-                        if case .failure(_) = completion {
-                            continuation.resume(returning: false)
-                        }
-                        cancellable?.cancel()
-                    },
-                    receiveValue: { response in
-                        if response.isError || response.user == nil {
-                            continuation.resume(returning: false)
-                        } else {
-                            AppLogger.logSecurityEvent("Credentials validated successfully for biometric setup")
-                            continuation.resume(returning: true)
-                        }
-                        cancellable?.cancel()
-                    }
-                )
-        }
-    }
-}
-
-enum BiometricError: Error, LocalizedError {
-    case keychainStorageFailed
-    case invalidCredentialFormat
-    case biometricNotAvailable
-    case authenticationFailed
-    
-    var errorDescription: String? {
-        switch self {
-        case .keychainStorageFailed:
-            return "Failed to securely store credentials"
-        case .invalidCredentialFormat:
-            return "Invalid credential format"
-        case .biometricNotAvailable:
-            return "Biometric authentication is not available"
-        case .authenticationFailed:
-            return "Biometric authentication failed"
-        }
-    }
-}
-
-struct KeychainHelper {
-    static func save(data: Data, forKey key: String) -> Bool {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrAccount as String: key,
-            kSecValueData as String: data,
-            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-        ]
-        
-        SecItemDelete(query as CFDictionary)
-        
-        let status = SecItemAdd(query as CFDictionary, nil)
-        return status == errSecSuccess
-    }
-    
-    static func load(forKey key: String) -> Data? {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrAccount as String: key,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne
-        ]
-        
-        var result: AnyObject?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
-        
-        return status == errSecSuccess ? result as? Data : nil
-    }
-    
-    static func delete(forKey key: String) {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrAccount as String: key
-        ]
-        
-        SecItemDelete(query as CFDictionary)
     }
 }

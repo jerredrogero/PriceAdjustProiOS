@@ -72,6 +72,9 @@ struct AddReceiptView: View {
                     uploadLimitStatusSection
                 }
                 
+                // Message section (success/error) at top
+                messageSection
+                
                 // Header
                 headerSection
                 
@@ -83,9 +86,6 @@ struct AddReceiptView: View {
                 } else {
                     uploadOptionsSection
                 }
-                
-                // Message section
-                messageSection
                 
                 // Instructions
                 instructionsSection

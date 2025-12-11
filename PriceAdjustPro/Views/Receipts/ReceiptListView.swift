@@ -4,10 +4,14 @@ import CoreData
 struct ReceiptListView: View {
     @EnvironmentObject var receiptStore: ReceiptStore
     @EnvironmentObject var themeManager: ThemeManager
+    @Environment(\.editMode) private var editMode
     @State private var showingAddReceipt = false
     @State private var selectedSortOption: SortOption = .dateNewest
     @State private var searchText = ""
     @State private var showingSettings = false
+    @State private var selectedReceiptForNavigation: Receipt?
+    @State private var showReceiptDetail = false
+    @State private var isEditing = false
     
     enum SortOption: String, CaseIterable {
         case dateNewest = "Date (Newest)"
@@ -65,21 +69,27 @@ struct ReceiptListView: View {
                         SearchEmptyStateView(searchText: searchText)
                     }
                 } else {
-                    ScrollView {
-                        LazyVStack(spacing: 16) {
-                            ForEach(sortedReceipts, id: \.objectID) { receipt in
-                                NavigationLink(destination: ReceiptDetailView(receipt: receipt)) {
-                                    ReceiptCardView(receipt: receipt)
-                                }
-                                .buttonStyle(PlainButtonStyle())
+                    List {
+                        ForEach(sortedReceipts, id: \.objectID) { receipt in
+                            Button {
+                                // When list is in edit mode, row taps should not navigate.
+                                guard editMode?.wrappedValue != .active else { return }
+                                selectedReceiptForNavigation = receipt
+                                showReceiptDetail = true
+                            } label: {
+                                ReceiptCardView(receipt: receipt)
+                                    .padding(.vertical, 8)
                             }
+                            .buttonStyle(.plain)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(themeManager.backgroundColor)
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
+                        .onDelete(perform: deleteReceipts)
                     }
-                    .refreshable {
-                        receiptStore.syncWithServer()
-                    }
+                    .listStyle(.plain)
+                    .background(themeManager.backgroundColor)
+                    .refreshable { receiptStore.syncWithServer() }
                 }
                 
                 // Error Message
@@ -91,23 +101,29 @@ struct ReceiptListView: View {
                 }
             }
             .navigationTitle("Receipts")
-            .navigationBarItems(
-                leading: Button(action: {
-                    showingSettings = true
-                }) {
-                    Image(systemName: "gear")
-                        .foregroundColor(themeManager.accentColor)
-                },
-                trailing: Button(action: {
-                    showingAddReceipt = true
-                }) {
-                    Image(systemName: "plus")
-                        .foregroundColor(themeManager.accentColor)
-                }
-            )
-            .searchable(text: $searchText)
             .toolbar {
-                EditButton()
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        showingSettings = true
+                    }) {
+                        Image(systemName: "gear")
+                            .foregroundColor(themeManager.accentColor)
+                    }
+                }
+                
+                ToolbarItemGroup(placement: .navigationBarTrailing) {
+                    Button(isEditing ? "Done" : "Edit") {
+                        toggleEditMode()
+                    }
+                    .foregroundColor(themeManager.accentColor)
+                    
+                    Button(action: {
+                        showingAddReceipt = true
+                    }) {
+                        Image(systemName: "plus")
+                            .foregroundColor(themeManager.accentColor)
+                    }
+                }
             }
             .onAppear {
                 receiptStore.loadReceipts()
@@ -122,6 +138,21 @@ struct ReceiptListView: View {
                         LoadingView()
                     }
                 }
+            )
+            .background(
+                NavigationLink(
+                    destination: Group {
+                        if let receipt = selectedReceiptForNavigation {
+                            ReceiptDetailView(receipt: receipt)
+                        } else {
+                            EmptyView()
+                        }
+                    },
+                    isActive: $showReceiptDetail
+                ) {
+                    EmptyView()
+                }
+                .hidden()
             )
             }
         }
@@ -154,6 +185,27 @@ struct ReceiptListView: View {
         // The sorting is handled by the computed property
         // This function can be used to trigger any additional side effects if needed
         // For now, it just needs to exist for the Menu buttons
+    }
+
+    private func toggleEditMode() {
+        withAnimation {
+            isEditing.toggle()
+            editMode?.wrappedValue = isEditing ? .active : .inactive
+        }
+        
+        // Defensive: avoid accidental navigation when toggling edit state.
+        if isEditing {
+            selectedReceiptForNavigation = nil
+            showReceiptDetail = false
+        }
+    }
+    
+    private func deleteReceipts(at offsets: IndexSet) {
+        // Offsets are for the *sorted* list; delete the corresponding receipts.
+        let receiptsToDelete = offsets.map { sortedReceipts[$0] }
+        for receipt in receiptsToDelete {
+            receiptStore.deleteReceipt(receipt)
+        }
     }
     
     @ViewBuilder

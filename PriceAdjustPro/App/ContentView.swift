@@ -9,7 +9,6 @@ extension Notification.Name {
     static let navigateToOnSale = Notification.Name("navigateToOnSale")
     static let navigateToReceipts = Notification.Name("navigateToReceipts")
     static let navigateToReceipt = Notification.Name("navigateToReceipt")
-    static let navigateToPriceAdjustments = Notification.Name("navigateToPriceAdjustments")
     static let navigateToUpload = Notification.Name("navigateToUpload")
     static let priceAdjustmentFound = Notification.Name("priceAdjustmentFound")
 }

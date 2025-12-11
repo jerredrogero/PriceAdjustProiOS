@@ -2,6 +2,7 @@ import Foundation
 import Combine
 import SwiftUI
 
+@MainActor
 class AccountService: ObservableObject {
     static let shared = AccountService()
     
@@ -60,11 +61,19 @@ class AccountService: ObservableObject {
     
     // MARK: - Account Type Checks
     
+    /// True when StoreKit indicates an active subscription entitlement.
+    /// This is used as a source of truth for "Premium" so the UI doesn't regress
+    /// to free limits if the backend user payload is stale.
+    private var hasPremiumEntitlement: Bool {
+        StoreKitService.shared.isPremiumUser
+    }
+    
     var isPaidUser: Bool {
-        return currentUser?.isPaidUser ?? false
+        return (currentUser?.isPaidUser ?? false) || hasPremiumEntitlement
     }
     
     var isFreeUser: Bool {
+        if isPaidUser { return false }
         return currentUser?.isFreeUser ?? true
     }
     
@@ -75,7 +84,8 @@ class AccountService: ObservableObject {
     // MARK: - Receipt Limits
     
     var receiptLimit: Int {
-        return currentUser?.receiptLimit ?? (isFreeUser ? 5 : Int.max)
+        if isPaidUser { return Int.max }
+        return currentUser?.receiptLimit ?? 5
     }
     
     var receiptCount: Int {
@@ -83,14 +93,17 @@ class AccountService: ObservableObject {
     }
     
     var remainingReceiptUploads: Int {
-        return currentUser?.remainingReceiptUploads ?? (isFreeUser ? 5 : Int.max)
+        if isPaidUser { return Int.max }
+        return currentUser?.remainingReceiptUploads ?? max(0, receiptLimit - receiptCount)
     }
     
     var hasReachedReceiptLimit: Bool {
+        if isPaidUser { return false }
         return currentUser?.hasReachedReceiptLimit ?? false
     }
     
     var receiptLimitProgress: Double {
+        if isPaidUser { return 0.0 }
         guard receiptLimit > 0 else { return 0.0 }
         return Double(receiptCount) / Double(receiptLimit)
     }
@@ -122,6 +135,10 @@ class AccountService: ObservableObject {
     }
     
     func checkReceiptUploadLimit() -> Bool {
+        if isPaidUser {
+            return true
+        }
+        
         if isFreeUser && hasReachedReceiptLimit {
             showUpgradePrompt = true
             return false

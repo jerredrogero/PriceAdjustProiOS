@@ -36,6 +36,8 @@
 		3C0A1E6B2C8A123500000001 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E6C2C8A123500000001 /* SettingsView.swift */; };
 		3C0A1E702C8A123500000001 /* EditReceiptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E712C8A123500000001 /* EditReceiptView.swift */; };
 		3C0A1E722C8A123500000001 /* AccountService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E732C8A123500000001 /* AccountService.swift */; };
+		3C0A1E8A2C8A123500000008 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E8B2C8A123500000008 /* NotificationManager.swift */; };
+		3C0A1E8E2C8A12350000000A /* BiometricAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E8F2C8A12350000000A /* BiometricAuthService.swift */; };
 		3C0A1E7E2C8A123500000002 /* EmailVerificationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E7F2C8A123500000002 /* EmailVerificationView.swift */; };
 		3C0A1E802C8A123500000003 /* SpendingAnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E812C8A123500000003 /* SpendingAnalyticsView.swift */; };
 		3C0A1E822C8A123500000004 /* ReceiptDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C0A1E832C8A123500000004 /* ReceiptDetailView.swift */; };
@@ -103,6 +105,8 @@
 		3C0A1E6C2C8A123500000001 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		3C0A1E712C8A123500000001 /* EditReceiptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditReceiptView.swift; sourceTree = "<group>"; };
 		3C0A1E732C8A123500000001 /* AccountService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountService.swift; sourceTree = "<group>"; };
+		3C0A1E8B2C8A123500000008 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
+		3C0A1E8F2C8A12350000000A /* BiometricAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricAuthService.swift; sourceTree = "<group>"; };
 		3C0A1E7F2C8A123500000002 /* EmailVerificationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailVerificationView.swift; sourceTree = "<group>"; };
 		3C0A1E812C8A123500000003 /* SpendingAnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpendingAnalyticsView.swift; sourceTree = "<group>"; };
 		3C0A1E832C8A123500000004 /* ReceiptDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiptDetailView.swift; sourceTree = "<group>"; };
@@ -259,6 +263,8 @@
 				3C0A1E5E2C8A123500000001 /* PDFService.swift */,
 				3C0A1E6A2C8A123500000001 /* ThemeManager.swift */,
 				3C0A1E732C8A123500000001 /* AccountService.swift */,
+				3C0A1E8F2C8A12350000000A /* BiometricAuthService.swift */,
+				3C0A1E8B2C8A123500000008 /* NotificationManager.swift */,
 				F76F4613AD4E4DFE9EF58F4E /* StoreKitService.swift */,
 				C7814FA42D55412682217469 /* SubscriptionSyncService.swift */,
 			);
@@ -491,6 +497,8 @@
 				3C0A1E632C8A123500000001 /* OnSaleView.swift in Sources */,
 				3C0A1E652C8A123500000001 /* OnSaleViewModel.swift in Sources */,
 				3C0A1E722C8A123500000001 /* AccountService.swift in Sources */,
+				3C0A1E8E2C8A12350000000A /* BiometricAuthService.swift in Sources */,
+				3C0A1E8A2C8A123500000008 /* NotificationManager.swift in Sources */,
 				C83D3C860BE942169D99D38B /* StoreKitService.swift in Sources */,
 				52A2AFBDCBCF44C9A822A790 /* SubscriptionSyncService.swift in Sources */,
 				497B8FA332CE4D67B23372BF /* SubscriptionView.swift in Sources */,
@@ -519,7 +527,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = JA9X29KK29;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PriceAdjustProWidget/Info.plist;
@@ -531,7 +539,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.priceadjustpro.ios.PriceAdjustProWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -549,7 +557,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = JA9X29KK29;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PriceAdjustProWidget/Info.plist;
@@ -561,7 +569,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.priceadjustpro.ios.PriceAdjustProWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -712,7 +720,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.1;
+				MARKETING_VERSION = 1.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.priceadjustpro.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -743,7 +751,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.1;
+				MARKETING_VERSION = 1.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.priceadjustpro.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

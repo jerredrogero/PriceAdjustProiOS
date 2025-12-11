@@ -11,6 +11,9 @@ class EditableLineItem: ObservableObject, Identifiable {
     @Published var price: String
     @Published var quantity: String
     @Published var totalPrice: String
+    @Published var onSale: Bool
+    @Published var instantSavings: String
+    @Published var originalPrice: String
     @Published var isExpanded: Bool = false
     
     init(lineItem: LineItem) {
@@ -21,6 +24,10 @@ class EditableLineItem: ObservableObject, Identifiable {
         self.price = String(format: "%.2f", lineItem.price)
         self.quantity = String(lineItem.quantity)
         self.totalPrice = String(format: "%.2f", lineItem.price * Double(lineItem.quantity))
+        self.onSale = lineItem.onSale
+        self.instantSavings = String(format: "%.2f", lineItem.instantSavings)
+        let original = lineItem.originalPrice > 0 ? lineItem.originalPrice : lineItem.price
+        self.originalPrice = String(format: "%.2f", original)
     }
     
     func updateTotalPrice() {
@@ -568,8 +575,8 @@ struct EditReceiptView: View {
             context.delete(lineItem)
         }
         
-        // Create new line items from editable items
-        for editableItem in editableLineItems {
+        // Create new line items from editable items (preserve order)
+        for (index, editableItem) in editableLineItems.enumerated() {
             let lineItem = LineItem(context: context)
             lineItem.id = editableItem.id
             lineItem.itemCode = editableItem.itemCode.isEmpty ? nil : editableItem.itemCode
@@ -577,6 +584,10 @@ struct EditReceiptView: View {
             lineItem.price = Double(editableItem.price) ?? 0.0
             lineItem.quantity = Int32(editableItem.quantity) ?? 1
             lineItem.category = nil
+            lineItem.orderIndex = Int32(index)
+            lineItem.onSale = editableItem.onSale || (Double(editableItem.instantSavings) ?? 0) > 0
+            lineItem.instantSavings = Double(editableItem.instantSavings) ?? 0.0
+            lineItem.originalPrice = Double(editableItem.originalPrice) ?? lineItem.price
             lineItem.receipt = receipt
         }
         

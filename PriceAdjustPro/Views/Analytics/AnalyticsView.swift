@@ -467,18 +467,18 @@ struct ModernStatCard: View {
         Button(action: {
             onTap?()
         }) {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Image(systemName: icon)
-                        .font(.title2)
-                        .foregroundColor(.white)
-                    
-                    Spacer()
-                    
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: icon)
+                    .font(.title2)
+                    .foregroundColor(.white)
+                
+                Spacer()
+                
                     HStack(spacing: 4) {
-                        Text(subtitle)
-                            .font(.caption)
-                            .foregroundColor(.white.opacity(0.8))
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.8))
                         
                         if onTap != nil {
                             Image(systemName: "chevron.right")
@@ -486,30 +486,30 @@ struct ModernStatCard: View {
                                 .foregroundColor(.white.opacity(0.6))
                         }
                     }
-                }
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
-                        .font(.subheadline)
-                        .foregroundColor(.white.opacity(0.9))
-                    
-                    Text(value)
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-                }
             }
-            .padding(20)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                LinearGradient(
-                    gradient: Gradient(colors: gradient),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.subheadline)
+                    .foregroundColor(.white.opacity(0.9))
+                
+                Text(value)
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+            }
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            LinearGradient(
+                gradient: Gradient(colors: gradient),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
             )
-            .cornerRadius(16)
-            .shadow(color: gradient.first?.opacity(0.3) ?? .clear, radius: 10, x: 0, y: 5)
+        )
+        .cornerRadius(16)
+        .shadow(color: gradient.first?.opacity(0.3) ?? .clear, radius: 10, x: 0, y: 5)
         }
         .buttonStyle(ScaleButtonStyle())
     }

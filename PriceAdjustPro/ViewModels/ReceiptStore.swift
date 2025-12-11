@@ -4,6 +4,7 @@ import Combine
 import SwiftUI
 
 
+@MainActor
 class ReceiptStore: ObservableObject {
     @Published var receipts: [Receipt] = []
     @Published var isLoading = false
