@@ -4,14 +4,12 @@ import CoreData
 struct ReceiptListView: View {
     @EnvironmentObject var receiptStore: ReceiptStore
     @EnvironmentObject var themeManager: ThemeManager
-    @Environment(\.editMode) private var editMode
     @State private var showingAddReceipt = false
     @State private var selectedSortOption: SortOption = .dateNewest
     @State private var searchText = ""
     @State private var showingSettings = false
     @State private var selectedReceiptForNavigation: Receipt?
     @State private var showReceiptDetail = false
-    @State private var isEditing = false
     
     enum SortOption: String, CaseIterable {
         case dateNewest = "Date (Newest)"
@@ -72,8 +70,6 @@ struct ReceiptListView: View {
                     List {
                         ForEach(sortedReceipts, id: \.objectID) { receipt in
                             Button {
-                                // When list is in edit mode, row taps should not navigate.
-                                guard editMode?.wrappedValue != .active else { return }
                                 selectedReceiptForNavigation = receipt
                                 showReceiptDetail = true
                             } label: {
@@ -112,11 +108,6 @@ struct ReceiptListView: View {
                 }
                 
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
-                    Button(isEditing ? "Done" : "Edit") {
-                        toggleEditMode()
-                    }
-                    .foregroundColor(themeManager.accentColor)
-                    
                     Button(action: {
                         showingAddReceipt = true
                     }) {
@@ -185,19 +176,6 @@ struct ReceiptListView: View {
         // The sorting is handled by the computed property
         // This function can be used to trigger any additional side effects if needed
         // For now, it just needs to exist for the Menu buttons
-    }
-
-    private func toggleEditMode() {
-        withAnimation {
-            isEditing.toggle()
-            editMode?.wrappedValue = isEditing ? .active : .inactive
-        }
-        
-        // Defensive: avoid accidental navigation when toggling edit state.
-        if isEditing {
-            selectedReceiptForNavigation = nil
-            showReceiptDetail = false
-        }
     }
     
     private func deleteReceipts(at offsets: IndexSet) {

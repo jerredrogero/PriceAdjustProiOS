@@ -5,6 +5,7 @@ struct ReceiptDetailView: View {
     let receipt: Receipt
     @EnvironmentObject var receiptStore: ReceiptStore
     @EnvironmentObject var themeManager: ThemeManager
+    @State private var showingEditSheet = false
     @State private var showingDeleteAlert = false
     @State private var showingShareSheet = false
     @State private var showingPDFViewer = false
@@ -31,6 +32,7 @@ struct ReceiptDetailView: View {
                 
                 // Action Buttons
                 CompactActionButtons(
+                    showingEditSheet: $showingEditSheet,
                     showingShareSheet: $showingShareSheet,
                     showingDeleteAlert: $showingDeleteAlert
                 )
@@ -39,6 +41,9 @@ struct ReceiptDetailView: View {
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Receipt")
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showingEditSheet) {
+            EditReceiptView(receipt: receipt)
+        }
         .sheet(isPresented: $showingShareSheet) {
             ShareSheet(items: createShareItems())
         }
@@ -515,11 +520,26 @@ struct CompactPDFSection: View {
 // MARK: - Compact Action Buttons
 
 struct CompactActionButtons: View {
+    @Binding var showingEditSheet: Bool
     @Binding var showingShareSheet: Bool
     @Binding var showingDeleteAlert: Bool
     
     var body: some View {
         HStack(spacing: 12) {
+            // Edit button
+            Button(action: { showingEditSheet = true }) {
+                HStack(spacing: 6) {
+                    Image(systemName: "pencil")
+                    Text("Edit")
+                        .font(.subheadline.weight(.semibold))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(Color.costcoRed)
+                .foregroundColor(.white)
+                .cornerRadius(10)
+            }
+            
             // Share button
             Button(action: { showingShareSheet = true }) {
                 HStack(spacing: 6) {
@@ -538,7 +558,7 @@ struct CompactActionButtons: View {
             Button(action: { showingDeleteAlert = true }) {
                 Image(systemName: "trash")
                     .font(.subheadline.weight(.semibold))
-                    .frame(maxWidth: .infinity)
+                    .frame(width: 44)
                     .padding(.vertical, 12)
                     .background(Color.red.opacity(0.15))
                     .foregroundColor(.red)
